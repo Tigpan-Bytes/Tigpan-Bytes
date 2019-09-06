@@ -52,7 +52,7 @@ function setup()
 	reset();
 
 	//gui elements to edit rules
-	fpsSlider = createSlider(1, 100, fps, 1);
+	fpsSlider = createSlider(1, 60, fps, 1);
 	fpsSlider.position(10, 10);
 	fpsSlider.style('width', '100px');
 
@@ -121,7 +121,7 @@ function draw()
 
 	//then renders gui stuff
 	fill('rgba(60%,100%,30%,0.6)');
-	rect(0,0,310,470);
+	rect(0,0,310,220);
 
 	fps = fpsSlider.value();
 	frameRate(fps);
@@ -141,13 +141,8 @@ function draw()
 	startingAliveChance = startSlider.value();
 	text('Starting Alive: ' + startingAliveChance, 140, 150);
 
-	startingAliveChance = startSlider.value();
-	text('Starting Alive: ' + startingAliveChance, 140, 150);
-
 	newPixelsPerCell = cellSizeSlider.value();
 	text('Cell Size: ' + newPixelsPerCell, 140, 180);
-
-	text('Lonely death means if there are less then or equal to that amount the cell will die. Crowd death means if there are greater then or equal to that amount the cell will die. Birth parents mean if there are exactly that amount then a cell will be born.', 10, 230, 290);
 
 	//gets an array to be the next array of cells
 	let nextCells = get2dArray(cols, rows);
