@@ -52,7 +52,7 @@ function setup()
 	reset();
 
 	//gui elements to edit rules
-	fpsSlider = createSlider(1, 100, fps, 1);
+	fpsSlider = createSlider(1, 60, fps, 1);
 	fpsSlider.position(10, 10);
 	fpsSlider.style('width', '100px');
 
