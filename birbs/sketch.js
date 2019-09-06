@@ -61,8 +61,6 @@ Vector2.prototype = {
 
 class Birb 
 {
-	//position and dire is [x,y]
-	//direction is [x,y]
 	constructor(speed, scaredSight, sight, scale, seperationForce, alignmentForce, cohesionForce, targetForce) 
 	{
 	  this.position = new Vector2(random(windowWidth), random(windowHeight));
@@ -82,9 +80,6 @@ class Birb
 	  this.alignmentForce = alignmentForce;
 	  this.cohesionForce = cohesionForce;
 	  this.targetForce = targetForce;
-
-	  //seperation grows with every frame it is active
-	  this.seperationScale = 0;
 	}
 
 	render()
@@ -124,7 +119,7 @@ class Birb
 		let inSightBirbs = new Array();
 		for (let i = 0; i < birbs.length; i++)
 		{
-			if (this.distance(this.position, birbs[i].position) <= this.sight && birbs[i] != this)
+			if (this.distance(this.position, birbs[i].position) < this.sight && birbs[i] != this)
 			{
 				inSightBirbs.push(birbs[i]);
 			}
@@ -134,7 +129,7 @@ class Birb
 		let inScaredBirbs = new Array();
 		for (let i = 0; i < inSightBirbs.length; i++)
 		{
-			if (this.distance(this.position, inSightBirbs[i].position) <= this.scaredSight)
+			if (this.distance(this.position, inSightBirbs[i].position) < this.scaredSight)
 			{
 				inScaredBirbs.push(inSightBirbs[i]);
 			}
@@ -175,32 +170,27 @@ class Birb
 			//Seperation forces
 			if (inScaredBirbs.length > 0)
 			{
-				this.seperationScale++;
-				if (this.seperationScale > 30)
-				{
-					this.seperationScale = 30;
-				}
-
 				let seperation = new Vector2(0,0);
+				let closestSep = 9000;
 				for (let i = 0; i < inScaredBirbs.length; i++)
 				{
-					seperation = seperation.add(this.position.subtract(inScaredBirbs[i].position));
+					let dist = 1 - (this.distance(this.position, inScaredBirbs[i].position) / scaredSight);
+					seperation = seperation.add(this.position.subtract(inScaredBirbs[i].position).multiply(dist));
+					if (closestSep < dist)
+					{
+						closestSep = dist;
+					}
 				}
 
 				seperation.normalize();
+				seperation.multiply + closestSep;
 				
 				//Adds the direction
-				this.direction = this.direction.add(alignment.multiply(this.alignmentForce)).add(cohesion.multiply(this.cohesionForce)).add(seperation.multiply(this.seperationForce * this.seperationScale / 20)).add(target.multiply(this.targetForce));
+				this.direction = this.direction.add(alignment.multiply(this.alignmentForce)).add(cohesion.multiply(this.cohesionForce)).add(seperation.multiply(this.seperationForce)).add(target.multiply(this.targetForce));
 				this.direction.normalize();
 			}
 			else
 			{
-				this.seperationScale--;
-				if (this.seperationScale < 0)
-				{
-					this.seperationScale = 0;
-				}
-
 				//Adds the direction
 				this.direction = this.direction.add(alignment.multiply(this.alignmentForce)).add(cohesion.multiply(this.cohesionForce)).add(target.multiply(this.targetForce));
 				this.direction.normalize();
@@ -236,7 +226,7 @@ let scaredSight = 40;
 
 let seperationForce = 0.09;
 let alignmentForce = 0.05;
-let cohesionForce = 0.02;
+let cohesionForce = 0.03;
 let targetForce = 0.03;
 
 let birbs;
@@ -294,6 +284,33 @@ function setup()
 	resetButton = createButton('Restart');
 	resetButton.position(10, 250);
 	resetButton.mousePressed(reset);
+
+	defaultButton = createButton('Preset: Default');
+	defaultButton.position(80, 250);
+	defaultButton.mousePressed(setDefault);
+}
+
+function setDefault()
+{
+	sightSlider.value(70);
+	scaredSightSlider.value(40);
+
+	seperationSlider.value(0.09);
+	alignmentSlider.value(0.05);
+	cohesionSlider.value(0.03);
+	targetSlider.value(0.03);
+
+	sight = 70;
+	scaredSight = 40;
+
+	seperationForce = 0.09;
+	alignmentForce = 0.05;
+	cohesionForce = 0.03;
+	targetForce = 0.03;
+
+	birbSpeed = 3;
+
+	reset();
 }
 
 function reset()

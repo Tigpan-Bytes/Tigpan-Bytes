@@ -29,6 +29,7 @@ let startSlider;
 let cellSizeSlider;
 
 let resetButton;
+let defaultButton;
 let gnawButton;
 
 function get2dArray(cols, rows)
@@ -81,17 +82,45 @@ function setup()
 	resetButton.position(10, 190);
 	resetButton.mousePressed(reset);
 
+	defaultButton = createButton('Preset: Default');
+	defaultButton.position(80, 190);
+	defaultButton.mousePressed(setDefault);
+
 	gnawButton = createButton('Preset: The Gnaw');
-	gnawButton.position(80, 190);
+	gnawButton.position(10, 220);
 	gnawButton.mousePressed(setTheGnaw);
 }
 
+//sets the preset gnaw
+function setDefault()
+{
+	lonelyDeathSlider.value(1);
+	crowdDeathSlider.value(4);
+	birthSlider.value(3);
+	startSlider.value(0.2);
+
+	lonelyDeath = 1;
+	crowdDeath = 4;
+	birth = 3;
+	startingAliveChance = 0.2;
+
+	reset();
+}
+
+//sets the preset gnaw
 function setTheGnaw()
 {
 	lonelyDeathSlider.value(3);
 	crowdDeathSlider.value(8);
 	birthSlider.value(3);
 	startSlider.value(0.85);
+
+	lonelyDeath = 3;
+	crowdDeath = 8;
+	birth = 3;
+	startingAliveChance = 0.85;
+
+	reset();
 }
 
 function reset()
@@ -134,7 +163,7 @@ function draw()
 
 	//then renders gui stuff
 	fill('rgba(60%,100%,30%,0.6)');
-	rect(0,0,310,220);
+	rect(0,0,310,250);
 
 	fps = fpsSlider.value();
 	frameRate(fps);
