@@ -300,6 +300,8 @@ function setDefault()
 	cohesionSlider.value(0.03);
 	targetSlider.value(0.03);
 
+	speedSlider.value(3);
+
 	sight = 70;
 	scaredSight = 40;
 
