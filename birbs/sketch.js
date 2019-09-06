@@ -3,7 +3,10 @@
 // Wednesday 5th September, 2019
 //
 // Extra for Experts:
-// - describe what you did to take this project "above and beyond"
+// - more complicated than expected of cs30 because it deals with classes and whatnot
+// - Gui for editing rules
+// - decently complicated to implement all of the rules
+
 
 //Vector2 code was taken from github and modifiyed https://gist.github.com/Dalimil/3daf2a0c531d7d030deb37a7bfeff454,
 function Vector2(x, y) {
@@ -228,7 +231,10 @@ let birbCount = 150;
 let birbSize = 10;
 let birbSpeed = 3;
 
-let seperationForce = 0.1;
+let sight = 70;
+let scaredSight = 40;
+
+let seperationForce = 0.09;
 let alignmentForce = 0.05;
 let cohesionForce = 0.02;
 let targetForce = 0.03;
@@ -241,6 +247,8 @@ let seperationSlider;
 let alignmentSlider;
 let cohesionSlider;
 let targetSlider;
+let sightSlider;
+let scaredSightSlider;
 let resetButton;
 
 function setup() 
@@ -275,8 +283,16 @@ function setup()
 	targetSlider.position(10, 160);
 	targetSlider.style('width', '100px');
 
+	sightSlider = createSlider(0, 300, sight, 10);
+	sightSlider.position(10, 190);
+	sightSlider.style('width', '100px');
+
+	scaredSightSlider = createSlider(0, 300, scaredSight, 10);
+	scaredSightSlider.position(10, 220);
+	scaredSightSlider.style('width', '100px');
+
 	resetButton = createButton('Restart');
-	resetButton.position(10, 190);
+	resetButton.position(10, 250);
 	resetButton.mousePressed(reset);
 }
 
@@ -287,7 +303,7 @@ function reset()
 	birbs = new Array(0);
 	for (let i = 0; i < birbCount; i++)
 	{
-		birbs.push(new Birb(birbSpeed, 35, 70, birbSize, seperationForce, alignmentForce, cohesionForce, targetForce));
+		birbs.push(new Birb(birbSpeed, scaredSight, sight < scaredSight ? scaredSight : sight, birbSize, seperationForce, alignmentForce, cohesionForce, targetForce));
 	}
 }
 
@@ -320,7 +336,7 @@ function draw()
 		birbs[i].update(birbs);
 	}
 
-	//draw target
+	//draw mouse target
 	stroke(255, 255, 255);
 	fill('rgba(100%,100%,100%,0.1)');
 	if (mouseIsPressed)
@@ -331,7 +347,7 @@ function draw()
 	//then renders gui stuff
 	stroke(0, 0);
 	fill('rgba(60%,100%,30%,0.6)');
-	rect(0,0,310,220);
+	rect(0,0,310,280);
 
 	birbCount = countSlider.value();
 	textSize(20);
@@ -352,4 +368,10 @@ function draw()
 
 	targetForce = targetSlider.value();
 	text('Target: ' + targetForce, 140, 180);
+
+	sight = sightSlider.value();
+	text('Sight: ' + sight, 140, 210);
+
+	scaredSight = scaredSightSlider.value();
+	text('Scared Sight: ' + scaredSight, 140, 240);
 }

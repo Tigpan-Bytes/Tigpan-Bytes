@@ -29,6 +29,7 @@ let startSlider;
 let cellSizeSlider;
 
 let resetButton;
+let gnawButton;
 
 function get2dArray(cols, rows)
 {
@@ -79,6 +80,18 @@ function setup()
 	resetButton = createButton('Restart');
 	resetButton.position(10, 190);
 	resetButton.mousePressed(reset);
+
+	gnawButton = createButton('Preset: The Gnaw');
+	gnawButton.position(80, 190);
+	gnawButton.mousePressed(setTheGnaw);
+}
+
+function setTheGnaw()
+{
+	lonelyDeathSlider.value(3);
+	crowdDeathSlider.value(8);
+	birthSlider.value(3);
+	startSlider.value(0.85);
 }
 
 function reset()
