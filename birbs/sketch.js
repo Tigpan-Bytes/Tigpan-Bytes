@@ -159,7 +159,7 @@ class Birb
 
 			//Mouse targeting forces
 			let target = new Vector2(0, 0);
-			if (mouseIsPressed)
+			if (mouseIsPressed && (mouseX > 310 || mouseY > 280))
 			{
 				let mousePos = new Vector2(mouseX, mouseY);
 				target = mousePos.subtract(this.position);
@@ -196,7 +196,7 @@ class Birb
 				this.direction.normalize();
 			}	
 		}
-		else if (mouseIsPressed)
+		else if (mouseIsPressed && (mouseX > 310 || mouseY > 280))
 		{
 			let mousePos = new Vector2(mouseX, mouseY);
 			let target = new Vector2(0, 0);
@@ -320,6 +320,7 @@ function reset()
 	birbs = new Array(0);
 	for (let i = 0; i < birbCount; i++)
 	{
+		//Create new instance of birb
 		birbs.push(new Birb(birbSpeed, scaredSight, sight < scaredSight ? scaredSight : sight, birbSize, seperationForce, alignmentForce, cohesionForce, targetForce));
 	}
 }
@@ -356,7 +357,7 @@ function draw()
 	//draw mouse target
 	stroke(255, 255, 255);
 	fill('rgba(100%,100%,100%,0.1)');
-	if (mouseIsPressed)
+	if (mouseIsPressed && (mouseX > 310 || mouseY > 280))
 	{
 		ellipse(mouseX, mouseY, 15);
 	}
