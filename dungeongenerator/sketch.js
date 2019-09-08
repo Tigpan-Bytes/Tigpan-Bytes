@@ -1,11 +1,11 @@
-// Birbs/Boids
+// Dungeon Generator
 // Timothy Letkeman
-// Wednesday 5th September, 2019
+// Thursday 6th September, 2019
 //
 // Extra for Experts:
-// - more complicated than expected of cs30 because it deals with classes and whatnot
-// - Gui for editing rules
-// - decently complicated to implement all of the rules
+// - more complicated than expected of cs30 because it deals with classes, inheritance, and enumerators
+// - Also its just pretty darn complicated period.
+// - You have to place rooms, then fill everything in with a maze, then connect the seperate regions, the erase dead ends
 
 const Passage = {
 	Unused: 0,
@@ -37,6 +37,7 @@ class MazeCell
 
 	render()
 	{
+		//If its black then don't even bother drawing a rect
 		if (this.r === 0 && this.g === 0 && this.b === 0)
 		{
 			return;
@@ -113,9 +114,11 @@ class VertexMazeCell extends MazeCell
 
 	setPassage(direction, type)
 	{
+		//initilizes a direction
 		this.setSoloPassage(direction, type);
 		if (type == Passage.Open)
 		{
+			//if the direction is set to be open change the color of the cell
 			this.allCells[this.x + VertexMazeCell.getDirectionX(direction)][this.y + VertexMazeCell.getDirectionY(direction)].setOpen();
 			this.allCells[this.x + VertexMazeCell.getDirectionX(direction)][this.y + VertexMazeCell.getDirectionY(direction)].region = this.region;
 		}
@@ -127,6 +130,7 @@ class VertexMazeCell extends MazeCell
 
 	get getAvailableDirection()
 	{
+		//returns an UNBIASED direction that hasn't been initilized and NaN if all directions are used (although that should never be called)
 		let skips = floor(random(0, 4 - this.initializedEdgeCount));
 		for (let i = 0; i < 4; i++)
 		{
@@ -144,6 +148,7 @@ class VertexMazeCell extends MazeCell
 
 	setSoloPassage(direction, type)
 	{
+		//just sets a direction for itself and ups the initilized edge count
 		this.initializedEdgeCount++;
 		this.passages[direction] = type;
 	}
@@ -169,6 +174,7 @@ let roomMaxSize = 3;
 let roomMinSize = 1;
 
 let deadEndRemoval = 0.85;
+let randomConnection = 0.005;
 let pixelsPerCell = 16;
 let cellOutline = true;
 
@@ -193,8 +199,10 @@ let roomAttemptsSlider;
 let roomMinSizeSlider;
 let roomMaxSizeSlider;
 let deadEndRemovalSlider;
+let randomConnectionSlider;
 
 let generateButton;
+let defaultsButton;
 
 function get2dArray(cols, rows)
 {
@@ -209,10 +217,13 @@ function get2dArray(cols, rows)
 
 function setup() 
 {
-	//caps frames at 60
-	frameRate(100);
-	//Basic setup of starting flight area 
-	createCanvas(windowWidth, windowHeight);
+	createGui();
+}
+
+function createGui()
+{
+	//Basic setup of starting gui area
+	createCanvas(780, 370);
 
 	//gui elements to edit rules
 	xSizeSlider = createSlider(5, 400, vertexCols, 5);
@@ -243,13 +254,38 @@ function setup()
 	deadEndRemovalSlider.position(10, 190);
 	deadEndRemovalSlider.style('width', '500px');
 
+	randomConnectionSlider = createSlider(0, 0.1, randomConnection, 0.001);
+	randomConnectionSlider.position(10, 220);
+	randomConnectionSlider.style('width', '500px');
+
 	generateButton = createButton('Generate');
-	generateButton.position(5, 220);
+	generateButton.position(10, 250);
 	generateButton.mousePressed(reset);
+
+	defaultsButton = createButton('Reset Defaults');
+	defaultsButton.position(90, 250);
+	defaultsButton.mousePressed(setDefaults);
+
+	hasGenerated = false;
+}
+
+function setDefaults()
+{
+	xSizeSlider.value(15);
+	ySizeSlider.value(15);
+	roomAttemptsSlider.value(80);
+	roomMinSizeSlider.value(1);
+	roomMaxSizeSlider.value(3);
+	pixelsPerCellSlider.value(16);
+	deadEndRemovalSlider.value(0.85);
+	randomConnectionSlider.value(0.005);
 }
 
 function reset()
 {
+	//starts the generation process
+
+	//gets rules from gui
 	vertexCols = xSizeSlider.value();
 	vertexRows = ySizeSlider.value();
 	pixelsPerCell = pixelsPerCellSlider.value();
@@ -261,7 +297,9 @@ function reset()
 	roomMinSize = roomMinSizeSlider.value();
 	roomMaxSize = roomMaxSizeSlider.value();
 	deadEndRemoval = deadEndRemovalSlider.value();
+	randomConnection = randomConnectionSlider.value();
 
+	//erases the gui
 	xSizeSlider.remove();
 	ySizeSlider.remove();
 	pixelsPerCellSlider.remove();
@@ -269,7 +307,17 @@ function reset()
 	roomMinSizeSlider.remove();
 	roomMaxSizeSlider.remove();
 	deadEndRemovalSlider.remove();
+	randomConnectionSlider.remove();
 	generateButton.remove();
+	defaultsButton.remove();
+
+	//Cells are organized as such (V = Vertex, R = Regular)
+	
+	// R R R R R
+	// R V R V R
+	// R R R R R
+	// R V R V R
+	// R R R R R
 
 	cols = vertexCols * 2 + 1;
 	rows = vertexRows * 2 + 1;
@@ -293,6 +341,7 @@ function reset()
 		}
 	}
 
+	//sets up the vertex cells with their position and the list of all cells
 	for (let x = 0; x < cols; x++)
 	{
 		for (let y = 0; y < rows; y++)
@@ -311,17 +360,18 @@ function generate()
 {
 	curRegion = 0;
 
-	generateRooms();
-	generateMaze();
-	connectRegions();
-	removeDeadEnds();
-	setEnd();
-	render();
+	generateRooms(); // places the rooms
+	generateMaze(); // fills in remaining space with maze corridors
+	connectRegions(); // connects rooms and mazes
+	removeDeadEnds(); // removes some dead ends in maze corridors
+	setEnd(); // decides what the ending room should be
+	render(); // renders everything
 }
 
-function generateRooms()
+function generateRooms() // places the rooms
 {
 	rooms = new Array();
+	//attempts to place rooms
 	for (let i = 0; i < roomAttempts; i++)
 	{
 		let xSize = floor(random(roomMinSize, roomMaxSize + 1));
@@ -330,71 +380,79 @@ function generateRooms()
 		let xPos = floor(random(0, vertexCols - xSize));
 		let yPos = floor(random(0, vertexRows - ySize));
 
-		if (xPos + xSize < vertexCols && yPos + ySize < vertexRows)
+		//checks if the room is not overlapping other rooms
+		let succeded = true;
+		for (let x = xPos; x < xPos + xSize + 1; x++)
 		{
-			let succeded = true;
-			for (let x = xPos; x < xPos + xSize + 1; x++)
+			for (let y = yPos; y < yPos + ySize + 1; y++)
 			{
-				for (let y = yPos; y < yPos + ySize + 1; y++)
+				if (!cells[x * 2 + 1][y * 2 + 1].walled)
 				{
-					if (!cells[x * 2 + 1][y * 2 + 1].walled)
-					{
-						succeded = false;
-						break;
-					}
-				}
-				if (!succeded)
-				{
+					succeded = false;
 					break;
 				}
 			}
-			if (succeded)
+			if (!succeded)
 			{
-				let colour = floor(random(0,3));
-				let r;
-				let g;
-				let b;
-				
-				if (colour == 0)
-				{
-					r = 255 - floor(random(0, 50));
-					g = 255 - floor(random(30, 140));
-					b = 255 - floor(random(30, 140));
-				}
-				else if (colour == 1)
-				{
-					r = 255 - floor(random(30, 140));
-					g = 255 - floor(random(0, 50));
-					b = 255 - floor(random(30, 140));
-				}
-				else
-				{
-					r = 255 - floor(random(30, 140));
-					g = 255 - floor(random(30, 140));
-					b = 255 - floor(random(0, 50));
-				}
-
-				for (let x = xPos * 2 + 1; x < (xPos + xSize) * 2 + 2; x++)
-				{
-					for (let y = yPos * 2 + 1; y < (yPos + ySize) * 2 + 2; y++)
-					{
-						cells[x][y].walled = false;
-						cells[x][y].changeColour(r,g,b);
-						cells[x][y].region = curRegion;
-					}
-				}
-				rooms.push([xPos, yPos, xSize, ySize]);
-				curRegion++;
+				break;
 			}
+		}
+		if (succeded)
+		{
+			//if its valid pick a color then fill in all the cells with the color and region data
+			let colour = floor(random(0,3));
+			let r;
+			let g;
+			let b;
+			
+			if (colour == 0)
+			{
+				r = 255 - floor(random(0, 50));
+				g = 255 - floor(random(30, 140));
+				b = 255 - floor(random(30, 140));
+			}
+			else if (colour == 1)
+			{
+				r = 255 - floor(random(30, 140));
+				g = 255 - floor(random(0, 50));
+				b = 255 - floor(random(30, 140));
+			}
+			else
+			{
+				r = 255 - floor(random(30, 140));
+				g = 255 - floor(random(30, 140));
+				b = 255 - floor(random(0, 50));
+			}
+
+			for (let x = xPos * 2 + 1; x < (xPos + xSize) * 2 + 2; x++)
+			{
+				for (let y = yPos * 2 + 1; y < (yPos + ySize) * 2 + 2; y++)
+				{
+					cells[x][y].walled = false;
+					cells[x][y].changeColour(r,g,b);
+					cells[x][y].region = curRegion;
+				}
+			}
+			//save the room for future use during the decision to place the end
+			rooms.push([xPos, yPos, xSize, ySize]);
+			curRegion++;
 		}
 	}
 }
 
-function generateMaze()
+function generateMaze()  // fills in remaining space with maze corridors
 {
+	//while there are valid positions to place the maze
 	let pos = getValidPosition();
 	while (pos !== null)
 	{
+		//the maze algoritim works like this
+		//1. pick a cell to be patient zero
+		//2. move along available edges placing cells and add every cell to a list
+		//3. if the cell has no more edges to initilize then remove it from the list
+		//4. if the front item in the list was removed then use the next
+		//5. quit when there are no more cells in the list
+
 		activeCells = new Array();
 		activeCells.push(cells[pos[0]][pos[1]]);
 		activeCells[0].awake(curRegion);
@@ -408,7 +466,7 @@ function generateMaze()
 	}
 }
 
-function connectRegions()
+function connectRegions()  // connects rooms and mazes
 {
 	let regions = new Array(curRegion);
 	for (let i = 0; i < curRegion; i++)
@@ -416,6 +474,7 @@ function connectRegions()
 		regions[i] = new Array();
 	}
 
+	//add all possible region connections to a list
 	for (let x = 1; x < cols - 1; x++)
 	{
 		for (let y = 1; y < rows - 1; y++)
@@ -450,7 +509,9 @@ function connectRegions()
 			}
 		}
 	}
+
 	//[0] == otherRegion, [1] == x, [2] == y
+	// when a region is conencted add all of its connections to the first region. only connect with regions that haven't been connected with yet.
 	let mergedRegions = new Array(0);
 	mergedRegions.push(0);
 	while (regions[0].length > 0)
@@ -468,6 +529,11 @@ function connectRegions()
 		{
 			if (mergedRegions.includes(regions[0][j][0]))
 			{
+				//chance to randomly open connection
+				if (random(1) < randomConnection && canRandomlyConnect(regions[0][j][1], regions[0][j][2]))
+				{
+					cells[regions[0][j][1]][regions[0][j][2]].setOpen();
+				}
 				regions[0].splice(j, 1);
 				j--;
 			}
@@ -475,8 +541,9 @@ function connectRegions()
 	}
 }
 
-function removeDeadEnds()
+function removeDeadEnds() // removes some dead ends in maze corridors
 {
+	//get a list of all deadends with the direction of the only path
 	let deadEnds = new Array();
 	for (let x = 0; x < vertexCols; x++)
 	{
@@ -514,7 +581,7 @@ function removeDeadEnds()
 	}
 }
 
-function setEnd()
+function setEnd() // decides what the ending room should be
 {
 	//picks farthest room (with randomness)
 
@@ -523,7 +590,7 @@ function setEnd()
 	for (let i = 0; i < rooms.length; i++) //0 == xPos, 1 == yPos, 2 == xSize, 3 == ySize
 	{
 		let distance = (Math.abs(startCell.x - rooms[i][0] * 2 + 1 + rooms[i][2] / 2) +  Math.abs(startCell.y - rooms[i][1] * 2 + 1 + rooms[i][3] / 2)) * random(0.5, 1);
-		print(distance);
+
 		if (distance > heighestDistance)
 		{
 			heighestDistance = distance;
@@ -537,6 +604,7 @@ function setEnd()
 
 function isDeadEnd(pos)
 {
+	//is a cell a dead end
 	let count = 0;
 	let dir = null;
 	for (let i = 0; i < 4 && count <= 1; i++)
@@ -550,8 +618,23 @@ function isDeadEnd(pos)
 	return count == 1 ? dir : null;
 }
 
+function canRandomlyConnect(x, y)
+{
+	//a cell can only randomly connect if it has only two adjacent non walled blocks
+	let count = 0;
+	for (let i = 0; i < 4 && count <= 2; i++)
+	{
+		if (!cells[x + VertexMazeCell.getDirectionX(i)][y + VertexMazeCell.getDirectionY(i)].walled)
+		{
+			count++;
+		}
+	}
+	return count == 2 ? true : false;
+}
+
 function getValidPosition()
 {
+	//gets a NON-BIASED valid position
 	let xStart = floor(random(0, vertexCols));
 	let yStart = floor(random(0, vertexRows));
 
@@ -581,10 +664,12 @@ function isInBounds(x, y)
 
 function doMazeGen()
 {
+	//get the most recent cell in the list
 	let curIndex = activeCells.length - 1;
 
 	if (activeCells[curIndex].initializedEdgeCount === 4)
 	{
+		//if all edges are initilized remove it.
 		activeCells.pop();
 		return;
 	}
@@ -593,13 +678,13 @@ function doMazeGen()
 	let x = activeCells[curIndex].x + VertexMazeCell.getDirectionX(dir) * 2;
 	let y = activeCells[curIndex].y + VertexMazeCell.getDirectionY(dir) * 2;
 
-	if (isInBounds(x,y) && cells[x][y].walled)
+	if (isInBounds(x,y) && cells[x][y].walled) //sets a walkable passage
 	{
 		activeCells[curIndex].setPassage(dir, Passage.Open);
 		activeCells.push(cells[x][y]);
 		cells[x][y].awake(curRegion);
 	}
-	else
+	else //initilize a wall
 	{
 		activeCells[curIndex].setPassage(dir, Passage.Blocked);
 	}
@@ -614,7 +699,7 @@ function getCell(x, y)
 	return null;
 }
 
-function render() 
+function render() // renders the dungeon
 {
 	//draw background colour
 	background(0);
@@ -630,14 +715,14 @@ function render()
 	}
 }
 
-function draw()
+function draw() // draws only the gui when the dungeon isn't generated
 {
 	if (!hasGenerated)
 	{	
 		background(255);
 
 		fill('rgba(30%,60%,20%,0.6)');
-		rect(0,0,760,280);
+		rect(0,0,780,370);
 
 		textSize(20);
 		fill(0);
@@ -657,6 +742,21 @@ function draw()
 		text('Room Min Size: ' + roomMinSizeSlider.value(), 520, 150);
 		text('Room Max Size: ' + roomMaxSizeSlider.value(), 520, 180);
 		text('Dead End Removal: ' + deadEndRemovalSlider.value(), 520, 210);
-		text('   Right click on the finished dungeon to save it as an image.', 10, 265);
+		text('Random Connection: ' + randomConnectionSlider.value(), 520, 240);
+		text('Right click on the finished dungeon to save it as an image.', 10, 295);
+		text('Press G to regenerate using the same settings.', 10, 325);
+		text('Press R to return to the options.', 10, 355);
+	}
+}
+
+function keyPressed() // regenerate the maze or go back to options
+{
+	if (hasGenerated && keyCode === 71)  //g
+	{
+		reset();
+	}
+	if (hasGenerated && keyCode === 82)  //r
+	{
+		createGui();
 	}
 }
