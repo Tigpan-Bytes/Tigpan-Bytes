@@ -175,14 +175,26 @@ let cellOutline = true;
 let cells;
 
 let cols;
-let vertexCols;
+let vertexCols = 15;
 let rows;
-let vertexRows;
+let vertexRows = 15;
 
 let activeCells;
 let curRegion;
 let startCell;
 let rooms;
+
+let hasGenerated = false;
+
+let xSizeSlider;
+let ySizeSlider;
+let pixelsPerCellSlider;
+let roomAttemptsSlider;
+let roomMinSizeSlider;
+let roomMaxSizeSlider;
+let deadEndRemovalSlider;
+
+let generateButton;
 
 function get2dArray(cols, rows)
 {
@@ -202,32 +214,68 @@ function setup()
 	//Basic setup of starting flight area 
 	createCanvas(windowWidth, windowHeight);
 
-	reset();
+	//gui elements to edit rules
+	xSizeSlider = createSlider(5, 400, vertexCols, 5);
+	xSizeSlider.position(10, 10);
+	xSizeSlider.style('width', '500px');
+
+	ySizeSlider = createSlider(5, 400, vertexRows, 5);
+	ySizeSlider.position(10, 40);
+	ySizeSlider.style('width', '500px');
+
+	pixelsPerCellSlider = createSlider(2, 64, pixelsPerCell, 1);
+	pixelsPerCellSlider.position(10, 70);
+	pixelsPerCellSlider.style('width', '500px');
+
+	roomAttemptsSlider = createSlider(0, 5000, roomAttempts, 25);
+	roomAttemptsSlider.position(10, 100);
+	roomAttemptsSlider.style('width', '500px');
+
+	roomMinSizeSlider = createSlider(1, 20, roomMinSize, 1);
+	roomMinSizeSlider.position(10, 130);
+	roomMinSizeSlider.style('width', '500px');
+
+	roomMaxSizeSlider = createSlider(1, 20, roomMaxSize, 1);
+	roomMaxSizeSlider.position(10, 160);
+	roomMaxSizeSlider.style('width', '500px');
+
+	deadEndRemovalSlider = createSlider(0, 1, deadEndRemoval, 0.01);
+	deadEndRemovalSlider.position(10, 190);
+	deadEndRemovalSlider.style('width', '500px');
+
+	generateButton = createButton('Generate');
+	generateButton.position(5, 220);
+	generateButton.mousePressed(reset);
 }
 
 function reset()
 {
-	cols = Math.floor((windowWidth / pixelsPerCell) / 2) * 2;
-	if (cols + 1 > windowWidth / pixelsPerCell)
+	vertexCols = xSizeSlider.value();
+	vertexRows = ySizeSlider.value();
+	pixelsPerCell = pixelsPerCellSlider.value();
+	roomAttempts = roomAttemptsSlider.value();
+	if (roomAttempts == 0)
 	{
-		cols--;
+		roomAttempts = 1;
 	}
-	else
-	{
-		cols++;
-	}
-	vertexCols = floor((cols - 1) / 2);
+	roomMinSize = roomMinSizeSlider.value();
+	roomMaxSize = roomMaxSizeSlider.value();
+	deadEndRemoval = deadEndRemovalSlider.value();
 
-	rows = Math.floor((windowHeight / pixelsPerCell) / 2) * 2;
-	if (rows + 1 > windowHeight / pixelsPerCell)
-	{
-		rows--;
-	}
-	else
-	{
-		rows++;
-	}
-	vertexRows = floor((rows - 1) / 2);
+	xSizeSlider.remove();
+	ySizeSlider.remove();
+	pixelsPerCellSlider.remove();
+	roomAttemptsSlider.remove();
+	roomMinSizeSlider.remove();
+	roomMaxSizeSlider.remove();
+	deadEndRemovalSlider.remove();
+	generateButton.remove();
+
+	cols = vertexCols * 2 + 1;
+	rows = vertexRows * 2 + 1;
+
+	hasGenerated = true;
+	createCanvas(cols * pixelsPerCell, rows * pixelsPerCell);
 
 	cells = get2dArray(cols, rows);
 	for (let x = 0; x < cols; x++)
@@ -268,6 +316,7 @@ function generate()
 	connectRegions();
 	removeDeadEnds();
 	setEnd();
+	render();
 }
 
 function generateRooms()
@@ -565,7 +614,7 @@ function getCell(x, y)
 	return null;
 }
 
-function draw() 
+function render() 
 {
 	//draw background colour
 	background(0);
@@ -578,5 +627,36 @@ function draw()
 		{
 			cells[x][y].render();
 		}
+	}
+}
+
+function draw()
+{
+	if (!hasGenerated)
+	{	
+		background(255);
+
+		fill('rgba(30%,60%,20%,0.6)');
+		rect(0,0,760,280);
+
+		textSize(20);
+		fill(0);
+		noStroke();
+
+		text('X Size: ' + xSizeSlider.value(), 520, 30);
+		text('Y Size: ' + ySizeSlider.value(), 520, 60);
+		text('Pixels Per Cell: ' + pixelsPerCellSlider.value(), 520, 90);
+		if (roomAttemptsSlider.value() == 0)
+		{
+			text('Room Attempts: 1', 520, 120);
+		}
+		else
+		{
+			text('Room Attempts: ' + roomAttemptsSlider.value(), 520, 120);
+		}
+		text('Room Min Size: ' + roomMinSizeSlider.value(), 520, 150);
+		text('Room Max Size: ' + roomMaxSizeSlider.value(), 520, 180);
+		text('Dead End Removal: ' + deadEndRemovalSlider.value(), 520, 210);
+		text('   Right click on the finished dungeon to save it as an image.', 10, 265);
 	}
 }
