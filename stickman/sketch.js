@@ -36,9 +36,9 @@ Vector2.prototype = {
 	},
 
 	distance: function(vector) {
-		let x = Math.abs(this.x - vector.x);
-		let y = Math.abs(this.y - vector.y);
-		return Math.sqrt(x * x + y * y);
+		let xx = Math.abs(this.x - vector.x);
+		let yy = Math.abs(this.y - vector.y);
+		return Math.sqrt(xx * xx + yy * yy);
 	},
 
 	moveTowards: function(vector, delta) {
@@ -80,7 +80,7 @@ Vector2.prototype = {
 
 class Rigidbody 
 {
-	constructor(position, velocity, colliders, gravity) 
+	constructor(position, velocity, colliders, gravity, mass, drag, friction, elastisity) 
 	{
 	  this.position = position;
 	  this.velocity = velocity;
@@ -88,7 +88,10 @@ class Rigidbody
 	  this.colliders = colliders;
 	  this.joints = new Array();
 	  this.gravity = gravity;
-	  this.mass = 1;
+	  this.mass = mass;
+	  this.drag = drag;
+	  this.friction = friction;
+	  this.elastisity = elastisity;
 	}
 
 	addDistanceJoint(other, distance)
@@ -98,6 +101,7 @@ class Rigidbody
 
 	update()
 	{
+		this.velocity = this.velocity.multiply(this.drag);
 		this.velocity.y += this.gravity;
 		let remainingVelocity = 1;
 
@@ -123,12 +127,14 @@ class Rigidbody
 			if (lowestHit.normal.x === 0)
 			{						
 				this.position.y = lowestHit.pos.y - (lowestHit.pos.y - this.position.y);
-				this.velocity.y = -this.velocity.y;
+				this.velocity.y = -this.velocity.y * this.elastisity;
+				this.velocity.x = this.velocity.x * this.friction;
 			}
 			else
 			{
 				this.position.x = lowestHit.pos.x - (lowestHit.pos.x - this.position.x);
-				this.velocity.x = -this.velocity.x;
+				this.velocity.x = -this.velocity.x * this.elastisity;
+				this.velocity.y = this.velocity.y * this.friction;
 			}
 			remainingVelocity -= lowestTime;
 		}
@@ -288,21 +294,51 @@ class DistanceJoint extends Joint
 
 		if (distance > this.targetDistance)
         {
-			this.parent.position = this.parent.position.moveTowards(posTwo, (distance - this.targetDistance) / (this.parent.mass / (this.parent.mass + this.connector.mass)));
-			this.connector.position = this.connector.position.moveTowards(posOne, (distance - this.targetDistance) / (this.connector.mass / (this.parent.mass + this.connector.mass)));
+			let desiredOne = this.parent.position.moveTowards(posTwo, (distance - this.targetDistance) / (this.parent.mass / (this.parent.mass + this.connector.mass)));
+			let desiredTwo = this.connector.position.moveTowards(posOne, (distance - this.targetDistance) / (this.connector.mass / (this.parent.mass + this.connector.mass)));
 
-            this.parent.velocity = this.parent.velocity.add(this.parent.position.subtract(posOne).multiply((this.parent.mass / (this.parent.mass + this.connector.mass))));
-            this.connector.velocity = this.connector.velocity.add(this.connector.position.subtract(posTwo).multiply((this.connector.mass / (this.parent.mass + this.connector.mass))));
+            this.parent.velocity = this.parent.velocity.add(desiredOne.subtract(posOne).multiply((this.parent.mass / (this.parent.mass + this.connector.mass)) * ((distance - this.targetDistance) / this.targetDistance)));
+            this.connector.velocity = this.connector.velocity.add(desiredTwo.subtract(posTwo).multiply((this.connector.mass / (this.parent.mass + this.connector.mass)) * ((distance - this.targetDistance) / this.targetDistance)));
         }
 	}
 }
 
+class Stickman
+{
+	constructor(position) 
+	{
+		this.head = new Rigidbody(new Vector2(100, 100), new Vector2(3, 1), [floor, rWall, lWall, center], baseGravity, 1, baseDrag, baseFriction, baseElastisity);
+	}
+
+	update()
+	{
+
+	}
+
+	lateUpdate()
+	{
+
+	}
+
+	render()
+	{
+
+	}
+}
+
 let baseGravity = 0.25;
+let baseDrag = 0.99;
+let baseFriction = 0.8;
+let baseElastisity = 0.95;
+
 let maxCollisions = 4;
 
 let rb1;
 let rb2;
+let rbs;
 let joint;
+
+let coliders;
 
 let floor;
 let rWall;
@@ -315,14 +351,16 @@ function setup()
 	frameRate(60);
 	createCanvas(windowWidth, windowHeight);
 
-	floor = new AABBCollider(new Vector2(windowWidth / 2, windowHeight), new Vector2(windowWidth / 2, 5));
-	rWall = new AABBCollider(new Vector2(windowWidth, windowHeight / 2), new Vector2(5, windowHeight / 2));
-	lWall = new AABBCollider(new Vector2(0, windowHeight / 2), new Vector2(5, windowHeight / 2));
-	center = new AABBCollider(new Vector2(windowWidth / 2, windowHeight / 2), new Vector2(100, 100));
+	colliders = new Array();
+	colliders.push(new AABBCollider(new Vector2(windowWidth / 2, windowHeight), new Vector2(windowWidth / 2, 5)));
+	colliders.push(new AABBCollider(new Vector2(windowWidth, windowHeight / 2), new Vector2(5, windowHeight / 2)));
+	colliders.push(new AABBCollider(new Vector2(0, windowHeight / 2), new Vector2(5, windowHeight / 2)));
+	colliders.push(new AABBCollider(new Vector2(windowWidth / 2, windowHeight / 2), new Vector2(100, 100)));
 
-	rb1 = new Rigidbody(new Vector2(100, 100), new Vector2(3, 1), [floor, rWall, lWall, center], baseGravity);
-	rb2 = new Rigidbody(new Vector2(150, 100), new Vector2(3, -1), [floor, rWall, lWall, center], baseGravity);
-	rb1.addDistanceJoint(rb2, 50);
+	rbs = new Array();
+	rbs.push(new Rigidbody(new Vector2(100, 100), new Vector2(3, 1), colliders, baseGravity, 1, baseDrag, baseFriction, baseElastisity));
+	rbs.push(new Rigidbody(new Vector2(150, 100), new Vector2(3, -1), colliders, baseGravity, 1, baseDrag, baseFriction, baseElastisity));
+	rbs[0].addDistanceJoint(rbs[1], 50);
 }
 
 function draw() 
@@ -331,17 +369,22 @@ function draw()
 	background(0);
 	noStroke();
 
-	rb1.update();
-	rb2.update();
-	rb1.lateUpdate();
-	rb2.lateUpdate();
+	for (let i = 0; i < colliders.length; i++)
+	{
+		colliders[i].render();
+	}
 
-	fill(255);
-	ellipse(rb1.position.x, rb1.position.y, 15, 15);
-	ellipse(rb2.position.x, rb2.position.y, 15, 15);
+	for (let i = 0; i < rbs.length; i++)
+	{
+		rbs[i].update();
+	}
 
-	floor.render();
-	rWall.render();
-	lWall.render();
-	center.render();
+	for (let i = 0; i < rbs.length; i++)
+	{
+		rbs[i].lateUpdate();
+	}
+
+	strokeWeight(3);
+	stroke(255);
+	line(rbs[0].position.x, rbs[0].position.y, rbs[1].position.x, rbs[1].position.y,);
 }
