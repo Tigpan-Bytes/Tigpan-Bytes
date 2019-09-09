@@ -42,8 +42,8 @@ Vector2.prototype = {
 	},
 
 	moveTowards: function(vector, delta) {
-		delta = Math.min(delta, 1);
 		let diff = vector.subtract(this);
+		diff.normalize();
 		return this.add(diff.multiply(delta));
 	},
 
@@ -288,16 +288,11 @@ class DistanceJoint extends Joint
 
 		if (distance > this.targetDistance)
         {
-            //this.parent.position = posOne.lerp(posOne.add(posTwo.subtract(posOne).normalized().multiply(distance - this.targetDistance)), this.connector.mass / (this.parent.mass + this.connector.mass));
-			//this.connector.position = posTwo.lerp(posTwo.add(posOne.subtract(posTwo).normalized().multiply(distance - this.targetDistance)), this.parent.mass / (this.parent.mass + this.connector.mass));
-			
-			print(posOne.subtract(posTwo).normalized().multiply((distance - this.targetDistance) / 2).x);
-			rect(posOne.moveTowards(posTwo, 30).x, posOne.moveTowards(posTwo, 30).y, 20, 20);
-			//this.parent.position = this.parent.position.add(posOne.subtract(posTwo).normalized().multiply((distance - this.targetDistance) / 2));
-			//this.connector.position = this.connector.position.add(posTwo.subtract(posOne).normalized().multiply((distance - this.targetDistance) / 2));
+			this.parent.position = this.parent.position.moveTowards(posTwo, (distance - this.targetDistance) / (this.parent.mass / (this.parent.mass + this.connector.mass)));
+			this.connector.position = this.connector.position.moveTowards(posOne, (distance - this.targetDistance) / (this.connector.mass / (this.parent.mass + this.connector.mass)));
 
-            //this.parent.velocity = this.parent.velocity.add(this.parent.position.subtract(posOne).multiply((this.parent.mass / (this.parent.mass + this.connector.mass))));
-            //this.connector.velocity = this.connector.velocity.add(this.connector.position.subtract(posTwo).multiply((this.connector.mass / (this.parent.mass + this.connector.mass))));
+            this.parent.velocity = this.parent.velocity.add(this.parent.position.subtract(posOne).multiply((this.parent.mass / (this.parent.mass + this.connector.mass))));
+            this.connector.velocity = this.connector.velocity.add(this.connector.position.subtract(posTwo).multiply((this.connector.mass / (this.parent.mass + this.connector.mass))));
         }
 	}
 }
@@ -307,6 +302,8 @@ let maxCollisions = 4;
 
 let rb1;
 let rb2;
+let joint;
+
 let floor;
 let rWall;
 let lWall;
