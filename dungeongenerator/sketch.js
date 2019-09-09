@@ -589,8 +589,8 @@ function setEnd() // decides what the ending room should be
 	let heighestRoomIndex = -1;
 	for (let i = 0; i < rooms.length; i++) //0 == xPos, 1 == yPos, 2 == xSize, 3 == ySize
 	{
-		let x = Math.abs(startCell.x - rooms[i][0] * 2 + 1 + rooms[i][2] / 2);
-		let y = Math.abs(startCell.y - rooms[i][1] * 2 + 1 + rooms[i][3] / 2);
+		let x = Math.abs(startCell.x - rooms[i][0] * 2 + 1 + rooms[i][2] / 2) + random(0, vertexCols);
+		let y = Math.abs(startCell.y - rooms[i][1] * 2 + 1 + rooms[i][3] / 2) + random(0, vertexRows);
 		let distance = Math.sqrt(x * x + y * y) * random(0.2, 1) * random(0.2, 1);
 		if (random(1) < 0.1)
 		{
