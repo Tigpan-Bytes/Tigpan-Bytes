@@ -29,48 +29,25 @@ class MazeCell
 
 		this.region = -1;
 		this.walled = true;
-		this.isStart = false;
-		this.isEnd = false;
-		this.marked = false;
 
 		this.r = closedBrightness;
 		this.g = closedBrightness;
 		this.b = closedBrightness;
 	}
 
-	render(playerX, playerY)
+	render()
 	{
 		//If its black then don't even bother drawing a rect
-		if (this.walled)
+		if (this.r === 0 && this.g === 0 && this.b === 0)
 		{
-			strokeWeight(0);
-			fill(0);
-			rect((this.x - playerX) * pixelsPerCell + (windowWidth - pixelsPerCell) / 2, (this.y - playerY) * pixelsPerCell + (windowHeight - pixelsPerCell) / 2, pixelsPerCell, pixelsPerCell)
 			return;
 		}
-		//sets outline
 		if (cellOutline)
 		{
 			stroke(this.r - 130, this.g - 130, this.b - 130);
 		}
-		if (this.isStart || this.isEnd)
-		{
-			strokeWeight(pixelsPerCell / 4);
-		}
-		else
-		{
-			strokeWeight(0.5);
-		}
-		//draw
 		fill(this.r, this.g, this.b);
-		rect((this.x - playerX) * pixelsPerCell + (windowWidth - pixelsPerCell) / 2, (this.y - playerY) * pixelsPerCell + (windowHeight - pixelsPerCell) / 2, pixelsPerCell, pixelsPerCell);
-		if (this.marked)
-		{
-			strokeWeight(pixelsPerCell / 6);
-			stroke(0,0,255);
-			fill(160,200,255);
-			rect((this.x - playerX) * pixelsPerCell + (windowWidth - pixelsPerCell / 2) / 2, (this.y - playerY) * pixelsPerCell + (windowHeight - pixelsPerCell / 2) / 2, pixelsPerCell / 2, pixelsPerCell / 2);
-		}
+		rect(this.x * pixelsPerCell, this.y * pixelsPerCell, pixelsPerCell, pixelsPerCell)
 	}
 
 	setOpen()
@@ -105,6 +82,7 @@ class VertexMazeCell extends MazeCell
 	{
 		super(x, y);
 		this.allCells = null;
+		this.isStart = false;
 
 		this.neighbors = null;
 		this.initializedEdgeCount = 0;
@@ -197,7 +175,7 @@ let roomMinSize = 1;
 
 let deadEndRemoval = 0.85;
 let randomConnection = 0.005;
-let pixelsPerCell = 28;
+let pixelsPerCell = 16;
 let cellOutline = true;
 
 let cells;
@@ -210,15 +188,9 @@ let vertexRows = 15;
 let activeCells;
 let curRegion;
 let startCell;
-let endCell;
 let rooms;
 
-let regions;
-let mergedRegions;
-
 let hasGenerated = false;
-let genState = -1;
-let mazeGenState = -1;
 
 let xSizeSlider;
 let ySizeSlider;
@@ -231,10 +203,6 @@ let randomConnectionSlider;
 
 let generateButton;
 let defaultsButton;
-let cheater = false;
-
-let playerX;
-let playerY;
 
 function get2dArray(cols, rows)
 {
@@ -258,11 +226,11 @@ function createGui()
 	createCanvas(780, 370);
 
 	//gui elements to edit rules
-	xSizeSlider = createSlider(10, 300, vertexCols, 5);
+	xSizeSlider = createSlider(5, 400, vertexCols, 5);
 	xSizeSlider.position(10, 10);
 	xSizeSlider.style('width', '500px');
 
-	ySizeSlider = createSlider(10, 300, vertexRows, 5);
+	ySizeSlider = createSlider(5, 400, vertexRows, 5);
 	ySizeSlider.position(10, 40);
 	ySizeSlider.style('width', '500px');
 
@@ -270,7 +238,7 @@ function createGui()
 	pixelsPerCellSlider.position(10, 70);
 	pixelsPerCellSlider.style('width', '500px');
 
-	roomAttemptsSlider = createSlider(0, 10000, roomAttempts, 25);
+	roomAttemptsSlider = createSlider(0, 5000, roomAttempts, 25);
 	roomAttemptsSlider.position(10, 100);
 	roomAttemptsSlider.style('width', '500px');
 
@@ -308,7 +276,7 @@ function setDefaults()
 	roomAttemptsSlider.value(80);
 	roomMinSizeSlider.value(1);
 	roomMaxSizeSlider.value(3);
-	pixelsPerCellSlider.value(28);
+	pixelsPerCellSlider.value(16);
 	deadEndRemovalSlider.value(0.85);
 	randomConnectionSlider.value(0.005);
 }
@@ -316,7 +284,6 @@ function setDefaults()
 function reset()
 {
 	//starts the generation process
-	cheater = false;
 
 	//gets rules from gui
 	vertexCols = xSizeSlider.value();
@@ -328,15 +295,7 @@ function reset()
 		roomAttempts = 1;
 	}
 	roomMinSize = roomMinSizeSlider.value();
-	if (roomMinSize >= Math.min(vertexCols, vertexRows) - 1)
-	{
-		roomMinSize = Math.min(vertexCols, vertexRows) - 2;
-	}
 	roomMaxSize = roomMaxSizeSlider.value();
-	if (roomMaxSize >= Math.min(vertexCols, vertexRows) - 1)
-	{
-		roomMaxSize = Math.min(vertexCols, vertexRows) - 2;
-	}
 	deadEndRemoval = deadEndRemovalSlider.value();
 	randomConnection = randomConnectionSlider.value();
 
@@ -362,6 +321,9 @@ function reset()
 
 	cols = vertexCols * 2 + 1;
 	rows = vertexRows * 2 + 1;
+
+	hasGenerated = true;
+	createCanvas(cols * pixelsPerCell, rows * pixelsPerCell);
 
 	cells = get2dArray(cols, rows);
 	for (let x = 0; x < cols; x++)
@@ -391,150 +353,19 @@ function reset()
 		}
 	}
 
-	createCanvas(780, 370);
-	genState = 0;
-	curRegion = 0;
-	hasGenerated = false;
+	generate();
 }
 
-function draw() // draws only the gui when the dungeon isn't generated
+function generate()
 {
-	if (!hasGenerated)
-	{	
-		background(255);
-		if (genState === -1)
-		{
-			fill('rgba(30%,60%,20%,0.6)');
-			rect(0,0,780,370);
+	curRegion = 0;
 
-			textSize(20);
-			fill(0);
-			noStroke();
-
-			text('X Size: ' + xSizeSlider.value(), 520, 30);
-			text('Y Size: ' + ySizeSlider.value(), 520, 60);
-			text('Pixels Per Cell: ' + pixelsPerCellSlider.value(), 520, 90);
-			if (roomAttemptsSlider.value() == 0)
-			{
-				text('Room Attempts: 1', 520, 120);
-			}
-			else
-			{
-				text('Room Attempts: ' + roomAttemptsSlider.value(), 520, 120);
-			}
-			text('Room Min Size: ' + roomMinSizeSlider.value(), 520, 150);
-			text('Room Max Size: ' + roomMaxSizeSlider.value(), 520, 180);
-			text('Dead End Removal: ' + deadEndRemovalSlider.value(), 520, 210);
-			text('Random Connection: ' + randomConnectionSlider.value(), 520, 240);
-			text('WASD or Arrow Keys to move. Press space to mark or unmark a cell.', 10, 295);
-			text('Press G to regenerate using the same settings.', 10, 325);
-			text('Press R to return to the options. Press J to cheat and view the board.', 10, 355);
-		}
-		else if (genState == 0)
-		{
-			textSize(30);
-			fill(0);
-			text('0% completed.', 10, 10);
-			textSize(20);
-			text('Placing rooms.', 10, 40);
-			genState = 1;
-		}
-		else if (genState == 1)
-		{
-			textSize(30);
-			fill(0);
-			text('0% completed.', 10, 10);
-			textSize(20);
-			text('Placing rooms.', 10, 40);
-
-			mazeGenState = -1;
-			generateRooms(); // places the rooms
-			genState = 2;
-		}
-		else if (genState == 2)
-		{
-			textSize(30);
-			fill(0);
-			text((5 + floor(mazeGenState / 5)) + '% completed.', 10, 30);
-			textSize(20);
-			text('Filling in maze corridors.', 10, 70);
-			generateMaze(); // fills in remaining space with maze corridors
-			if (generateMaze())
-			{
-				genState = 3;
-			}
-			else
-			{
-				mazeGenState++;
-			}
-		}
-		else if (genState == 3)
-		{
-			textSize(30);
-			fill(0);
-			text('20% completed.', 10, 30);
-			textSize(20);
-			text('Finding region connections.', 10, 70);
-
-			genState = 4;
-		}
-		else if (genState == 4)
-		{
-			textSize(30);
-			fill(0);
-			text('20% completed.', 10, 30);
-			textSize(20);
-			text('Finding region connections.', 10, 70);
-
-			getConnections(); // connects rooms and mazes
-			mazeGenState = -1;
-			genState = 5;
-		}
-		else if (genState == 5)
-		{
-			textSize(30);
-			fill(0);
-			text((20 + floor(mazeGenState / 3)) + '% completed.', 10, 30);
-			textSize(20);
-			text('Connecting regions.', 10, 70);
-			if (connectRegions())
-			{
-				genState = 6;
-			}
-			else
-			{
-				mazeGenState++;
-			}
-		}
-		else if (genState == 6)
-		{
-			textSize(30);
-			fill(0);
-			text('85% completed.', 10, 30);
-			textSize(20);
-			text('Removing dead ends.', 10, 70);
-			removeDeadEnds(); // removes some dead ends in maze corridors
-			genState = 7;
-		}
-		else if (genState == 7)
-		{
-			textSize(30);
-			fill(0);
-			text('95% completed.', 10, 30);
-			textSize(20);
-			text('Finishing.', 10, 70);
-			setEnd(); // decides what the ending room should be
-			genState = 8;
-		}
-		else
-		{
-			createCanvas(windowWidth, windowHeight);
-			hasGenerated = true;
-			genState = -1;
-
-			render(); // renders everything
-		}
-	}
+	generateRooms(); // places the rooms
+	generateMaze(); // fills in remaining space with maze corridors
+	connectRegions(); // connects rooms and mazes
+	removeDeadEnds(); // removes some dead ends in maze corridors
+	setEnd(); // decides what the ending room should be
+	render(); // renders everything
 }
 
 function generateRooms() // places the rooms
@@ -613,47 +444,31 @@ function generateMaze()  // fills in remaining space with maze corridors
 {
 	//while there are valid positions to place the maze
 	let pos = getValidPosition();
-	if (pos === null)
+	while (pos !== null)
 	{
-		return true;
-	}
-	//the maze algoritim works like this
-	//1. pick a cell to be patient zero
-	//2. move along available edges placing cells and add every cell to a list
-	//3. if the cell has no more edges to initilize then remove it from the list
-	//4. if the front item in the list was removed then use the next
-	//5. quit when there are no more cells in the list
+		//the maze algoritim works like this
+		//1. pick a cell to be patient zero
+		//2. move along available edges placing cells and add every cell to a list
+		//3. if the cell has no more edges to initilize then remove it from the list
+		//4. if the front item in the list was removed then use the next
+		//5. quit when there are no more cells in the list
 
-	activeCells = new Array();
-	activeCells.push(cells[pos[0]][pos[1]]);
-	activeCells[0].awake(curRegion);
+		activeCells = new Array();
+		activeCells.push(cells[pos[0]][pos[1]]);
+		activeCells[0].awake(curRegion);
 
-	while (activeCells.length > 0)
-	{
-		doMazeGen();
+		while (activeCells.length > 0)
+		{
+			doMazeGen();
+		}
+		curRegion++;
+		pos = getValidPosition();
 	}
-	curRegion++;
-	pos = getValidPosition();
 }
 
-function getConnections()
+function connectRegions()  // connects rooms and mazes
 {
-	//reserves at least one dead end for the start
-	let deadEnds = new Array();
-	for (let x = 0; x < vertexCols; x++)
-	{
-		for (let y = 0; y < vertexRows; y++)
-		{
-			let dir = isDeadEnd([x * 2 + 1, y * 2 + 1]);
-			if (dir !== null)
-			{
-				deadEnds.push([x * 2 + 1, y * 2 + 1]);
-			}
-		}
-	}
-	let reservedCell = deadEnds[floor(random(0, deadEnds.length))];
-
-	regions = new Array(curRegion);
+	let regions = new Array(curRegion);
 	for (let i = 0; i < curRegion; i++)
 	{
 		regions[i] = new Array();
@@ -683,10 +498,6 @@ function getConnections()
 				{
 					continue;
 				} 
-				if ((x === reservedCell[0] && y === reservedCell[1]) || (x + VertexMazeCell.getDirectionX(d) * 2 === reservedCell[0] && y + VertexMazeCell.getDirectionY(d) * 2 === reservedCell[1]))
-				{
-					continue;
-				}
 
 				let cellOne = cells[x][y];
 				let cellTwo = cells[x + VertexMazeCell.getDirectionX(d) * 2][y + VertexMazeCell.getDirectionY(d) * 2];
@@ -694,58 +505,40 @@ function getConnections()
 				if (cellOne.region !== -1 && cellTwo.region !== -1 && cellOne.region !== cellTwo.region)
 				{
 					regions[cellOne.region].push([cellTwo.region, x + VertexMazeCell.getDirectionX(d), y + VertexMazeCell.getDirectionY(d)]);
-					//chance to randomly open connection
-					if (random(1) < randomConnection / 2 && canRandomlyConnect(x + VertexMazeCell.getDirectionX(d), y + VertexMazeCell.getDirectionY(d)))
-					{
-						cells[x + VertexMazeCell.getDirectionX(d)][ y + VertexMazeCell.getDirectionY(d)].setOpen();
-					}
 				}
 			}
 		}
 	}
 
-	mergedRegions = new Array(0);
-	mergedRegions.push(0);
-}
-
-function connectRegions()  // connects rooms and mazes
-{
 	//[0] == otherRegion, [1] == x, [2] == y
 	// when a region is conencted add all of its connections to the first region. only connect with regions that haven't been connected with yet.
-	for (let i = 0; i < 40; i++)
+	let mergedRegions = new Array(0);
+	mergedRegions.push(0);
+	while (regions[0].length > 0)
 	{
-		if (regions[0].length <= 0)
-		{
-			return true;
-		}
-
 		let connection = regions[0][floor(random(0, regions[0].length))];
 		cells[connection[1]][connection[2]].setOpen();
 
-		mergedRegions.push(connection[0]);
-				
-		//add all the connections from the merged regions to the main region
 		while (regions[connection[0]].length > 0)
 		{
-			let last = regions[connection[0]].pop();
-			if (!mergedRegions.includes(last))
-			{
-				regions[0].push(last);
-			}
+			regions[0].push(regions[connection[0]].pop());
 		}
 
-		//cull unnessesary connections
+		mergedRegions.push(connection[0]);
 		for (let j = 0; j < regions[0].length; j++)
 		{
 			if (mergedRegions.includes(regions[0][j][0]))
 			{
+				//chance to randomly open connection
+				if (random(1) < randomConnection && canRandomlyConnect(regions[0][j][1], regions[0][j][2]))
+				{
+					cells[regions[0][j][1]][regions[0][j][2]].setOpen();
+				}
 				regions[0].splice(j, 1);
 				j--;
 			}
 		}
 	}
-
-	return false;
 }
 
 function removeDeadEnds() // removes some dead ends in maze corridors
@@ -769,8 +562,6 @@ function removeDeadEnds() // removes some dead ends in maze corridors
 	startCell = cells[deadEnds[index][1]][deadEnds[index][2]];
 	deadEnds.splice(index, 1);
 	startCell.setStart();
-	playerX = startCell.x;
-	playerY = startCell.y;
 
 	//kill deadends
 	for (let i = 0; i < deadEnds.length; i++)
@@ -798,8 +589,8 @@ function setEnd() // decides what the ending room should be
 	let heighestRoomIndex = -1;
 	for (let i = 0; i < rooms.length; i++) //0 == xPos, 1 == yPos, 2 == xSize, 3 == ySize
 	{
-		let x = Math.abs(startCell.x - rooms[i][0] * 2 + 1 + rooms[i][2] / 2) + random(vertexCols / 2, cols);
-		let y = Math.abs(startCell.y - rooms[i][1] * 2 + 1 + rooms[i][3] / 2) + random(vertexRows / 2, rows);
+		let x = Math.abs(startCell.x - rooms[i][0] * 2 + 1 + rooms[i][2] / 2) + random(0, cols);
+		let y = Math.abs(startCell.y - rooms[i][1] * 2 + 1 + rooms[i][3] / 2) + random(0, rows);
 		let distance = Math.sqrt(x * x + y * y) * random(0.2, 1) * random(0.2, 1);
 
 		if (distance > heighestDistance)
@@ -810,12 +601,7 @@ function setEnd() // decides what the ending room should be
 	}
 
 	//set one of the non-edge cells in the room to 
-	let x = rooms[heighestRoomIndex][0] * 2 + 2 + floor(random(0, rooms[heighestRoomIndex][2] * 2 - 1));
-	let y = rooms[heighestRoomIndex][1] * 2 + 2 + floor(random(0, rooms[heighestRoomIndex][3] * 2 - 1));
-	endCell = cells[x][y];
-	endCell.changeColour(255, 0, 0);
-	endCell.isEnd = true;
-	//done with generation
+	cells[rooms[heighestRoomIndex][0] * 2 + 2 + floor(random(0, rooms[heighestRoomIndex][2] * 2 - 1))][rooms[heighestRoomIndex][1] * 2 + 2 + floor(random(0, rooms[heighestRoomIndex][3] * 2 - 1))].changeColour(255, 0, 0);
 }
 
 function isDeadEnd(pos)
@@ -917,155 +703,8 @@ function getCell(x, y)
 
 function render() // renders the dungeon
 {
-	if (cheater)
-	{
-		renderAll();
-		return;
-	}
-
 	//draw background colour
-	background(30);
-	noStroke();
-	strokeWeight(0.5); 
-
-	/*
-	for (let x = 0; x < cols; x++)
-	{
-		for (let y = 0; y < rows; y++)
-		{
-			cells[x][y].render(playerX, playerY);
-		}
-	}
-	*/
-
-	//Line of sight, its not pretty but its fast and it works well
-	let startCellVisible = false;
-	let endCellVisible = false;
-
-	//cast y++
-	let x = playerX;
-	let y = playerY;
-	do 
-	{
-		let cell = getCell(x - 1, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x + 1, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-
-		y++;
-	} while (isTileWalkable(x, y - 1))
-
-	//cast y--
-	x = playerX;
-	y = playerY;
-	do 
-	{
-		let cell = getCell(x - 1, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x + 1, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-
-		y--;
-	} while (isTileWalkable(x,y + 1))
-
-	//cast x++
-	x = playerX;
-	y = playerY;
-	do 
-	{
-		let cell = getCell(x, y - 1);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y + 1);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-
-		x++;
-	} while (isTileWalkable(x - 1,y))
-
-	//cast x--
-	x = playerX;
-	y = playerY;
-	do 
-	{
-		let cell = getCell(x, y - 1);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y + 1);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-
-		x--;
-	} while (isTileWalkable(x + 1,y))
-
-	//renders the room the player is in
-	for (let i = 0; i < rooms.length; i++)
-	{
-		if (isInRoom(playerX, playerY, rooms[i]))
-		{
-			for (let x = rooms[i][0] * 2; x <= (rooms[i][0] + rooms[i][2]) * 2 + 2; x++)
-			{
-				for (let y = rooms[i][1] * 2; y <= (rooms[i][1] + rooms[i][3]) * 2 + 2; y++)
-				{
-					let cell = getCell(x, y);
-					startCellVisible = cell.isStart || startCellVisible;
-					endCellVisible = cell.isEnd || endCellVisible;
-					cell.render(playerX, playerY);
-				}
-			}
-		}
-	}
-
-	cells[playerX][playerY].render();
-
-	//this is done so the cells with the large outlines are rendererd on top
-	if (startCellVisible)
-	{
-		startCell.render(playerX, playerY);
-	}
-	if (endCellVisible)
-	{
-		endCell.render(playerX, playerY);
-	}
-
-	strokeWeight(3); 
-	stroke(0,0,255);
-	fill(160,200,255);
-	ellipse(windowWidth / 2, windowHeight / 2, pixelsPerCell * 0.75);
-}
-
-function renderAll()
-{
-	//draw background colour
-	background(30);
+	background(0);
 	noStroke();
 	strokeWeight(0.5); 
 
@@ -1073,91 +712,53 @@ function renderAll()
 	{
 		for (let y = 0; y < rows; y++)
 		{
-			cells[x][y].render(playerX, playerY);
+			cells[x][y].render();
 		}
 	}
-
-	startCell.render(playerX, playerY);
-	endCell.render(playerX, playerY);
-
-	strokeWeight(3); 
-	stroke(0,0,255);
-	fill(160,200,255);
-	ellipse(windowWidth / 2, windowHeight / 2, pixelsPerCell * 0.75);
 }
 
-function isInRoom(x, y, room)
+function draw() // draws only the gui when the dungeon isn't generated
 {
-	let xPos = room[0] * 2 + 1;
-	let yPos = room[1] * 2 + 1;
-	let xSize = room[2] * 2 + 1;
-	let ySize = room[3] * 2 + 1;
+	if (!hasGenerated)
+	{	
+		background(255);
 
-	return (x >= xPos - 1 && x <= xPos + xSize && y >= yPos - 1 && y <= yPos + ySize);
+		fill('rgba(30%,60%,20%,0.6)');
+		rect(0,0,780,370);
+
+		textSize(20);
+		fill(0);
+		noStroke();
+
+		text('X Size: ' + xSizeSlider.value(), 520, 30);
+		text('Y Size: ' + ySizeSlider.value(), 520, 60);
+		text('Pixels Per Cell: ' + pixelsPerCellSlider.value(), 520, 90);
+		if (roomAttemptsSlider.value() == 0)
+		{
+			text('Room Attempts: 1', 520, 120);
+		}
+		else
+		{
+			text('Room Attempts: ' + roomAttemptsSlider.value(), 520, 120);
+		}
+		text('Room Min Size: ' + roomMinSizeSlider.value(), 520, 150);
+		text('Room Max Size: ' + roomMaxSizeSlider.value(), 520, 180);
+		text('Dead End Removal: ' + deadEndRemovalSlider.value(), 520, 210);
+		text('Random Connection: ' + randomConnectionSlider.value(), 520, 240);
+		text('Right click on the finished dungeon to save it as an image.', 10, 295);
+		text('Press G to regenerate using the same settings.', 10, 325);
+		text('Press R to return to the options.', 10, 355);
+	}
 }
 
-function keyPressed() // regenerate the maze, go back to options, or move
+function keyPressed() // regenerate the maze or go back to options
 {
-	if (hasGenerated)  //g
+	if (hasGenerated && keyCode === 71)  //g
 	{
-		if (keyCode === 71)
-		{
-			reset();
-		}
-		if (keyCode === 82)  //r
-		{
-			createGui();
-		}
-
-		if (keyCode === 87 || keyCode == 38)  // w || up
-		{
-			attemptPlayerMove(0, -1);
-		}
-		if (keyCode === 83 || keyCode == 40)  // s || down
-		{
-			attemptPlayerMove(0, 1);
-		}
-		if (keyCode === 68 || keyCode == 39)  // d || right
-		{
-			attemptPlayerMove(1, 0);
-		}
-		if (keyCode === 65 || keyCode == 37)  // a || left
-		{
-			attemptPlayerMove(-1, 0);
-		}
-
-		if (keyCode === 74)  // j
-		{
-			cheater = true;
-			render();
-		}
-
-		if (keyCode === 32)  //space
-		{
-			let cell = getCell(playerX, playerY);
-			cell.marked = !cell.marked;
-			render();
-		}
+		reset();
 	}
-}
-
-function attemptPlayerMove(x, y)
-{
-	if (isTileWalkable(playerX + x, playerY + y))
+	if (hasGenerated && keyCode === 82)  //r
 	{
-		playerX += x;
-		playerY += y;
-		if (getCell(playerX, playerY).isEnd)
-		{
-			createGui();
-		}
-		render();
+		createGui();
 	}
-}
-
-function isTileWalkable(x, y)
-{
-	let cell = getCell(x, y);
-
-	return cell !== null && !cell.walled;
 }
