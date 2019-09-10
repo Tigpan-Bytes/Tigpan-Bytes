@@ -255,14 +255,14 @@ function setup()
 function createGui()
 {
 	//Basic setup of starting gui area
-	createCanvas(780, 370);
+	createCanvas(800, 370);
 
 	//gui elements to edit rules
-	xSizeSlider = createSlider(10, 300, vertexCols, 5);
+	xSizeSlider = createSlider(5, 300, vertexCols, 5);
 	xSizeSlider.position(10, 10);
 	xSizeSlider.style('width', '500px');
 
-	ySizeSlider = createSlider(10, 300, vertexRows, 5);
+	ySizeSlider = createSlider(5, 300, vertexRows, 5);
 	ySizeSlider.position(10, 40);
 	ySizeSlider.style('width', '500px');
 
@@ -391,7 +391,7 @@ function reset()
 		}
 	}
 
-	createCanvas(780, 370);
+	createCanvas(800, 370);
 	genState = 0;
 	curRegion = 0;
 	hasGenerated = false;
@@ -405,7 +405,7 @@ function draw() // draws only the gui when the dungeon isn't generated
 		if (genState === -1)
 		{
 			fill('rgba(30%,60%,20%,0.6)');
-			rect(0,0,780,370);
+			rect(0,0,800,370);
 
 			textSize(20);
 			fill(0);
@@ -427,8 +427,8 @@ function draw() // draws only the gui when the dungeon isn't generated
 			text('Dead End Removal: ' + deadEndRemovalSlider.value(), 520, 210);
 			text('Random Connection: ' + randomConnectionSlider.value(), 520, 240);
 			text('WASD or Arrow Keys to move. Press space to mark or unmark a cell.', 10, 295);
-			text('Press G to regenerate using the same settings.', 10, 325);
-			text('Press R to return to the options. Press J to cheat and view the board.', 10, 355);
+			text('Press G to regenerate using the same settings. To win reach the red exit cell.', 10, 325);
+			text('Press R to return to the options. Press J to cheat and view the board (lags on big maps).', 10, 355);
 		}
 		else if (genState == 0)
 		{
