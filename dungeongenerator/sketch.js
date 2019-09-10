@@ -6,6 +6,7 @@
 // - more complicated than expected of cs30 because it deals with classes, inheritance, and enumerators
 // - Also its just pretty darn complicated period.
 // - You have to place rooms, then fill everything in with a maze, then connect the seperate regions, the erase dead ends
+// - Polymorphism
 
 const Passage = {
 	Unused: 0,
@@ -191,7 +192,7 @@ const openBrightness = 255;
 const closedBrightness = 0;
 
 //preset values
-let roomAttempts = 80;
+let roomAttempts = 100;
 let roomMaxSize = 3;
 let roomMinSize = 1;
 
@@ -305,7 +306,7 @@ function setDefaults()
 {
 	xSizeSlider.value(15);
 	ySizeSlider.value(15);
-	roomAttemptsSlider.value(80);
+	roomAttemptsSlider.value(100);
 	roomMinSizeSlider.value(1);
 	roomMaxSizeSlider.value(3);
 	pixelsPerCellSlider.value(28);
