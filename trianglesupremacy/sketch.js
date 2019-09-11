@@ -186,9 +186,9 @@ class ECircle extends Enemy // Circle will split into three when killed
 {
 	constructor(position, player, canSplit)
 	{
-		super(position, player, 30 * (canSplit ? 1: 0.5), 5);
+		super(position, player, 30 * (canSplit ? 1: 0.2), 5);
 
-		this.moveSpeed = 1.6;
+		this.moveSpeed = 1.6 * (canSplit ? 1: 0.8);
 		this.radius = 25 * (canSplit ? 1: 0.4);
 		this.canSplit = canSplit;
 
