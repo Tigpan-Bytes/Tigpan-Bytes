@@ -192,7 +192,7 @@ const openBrightness = 255;
 const closedBrightness = 0;
 
 //preset values
-let roomAttempts = 100;
+let roomAttempts = 125;
 let roomMaxSize = 3;
 let roomMinSize = 1;
 
@@ -306,7 +306,7 @@ function setDefaults()
 {
 	xSizeSlider.value(15);
 	ySizeSlider.value(15);
-	roomAttemptsSlider.value(100);
+	roomAttemptsSlider.value(125);
 	roomMinSizeSlider.value(1);
 	roomMaxSizeSlider.value(3);
 	pixelsPerCellSlider.value(28);
