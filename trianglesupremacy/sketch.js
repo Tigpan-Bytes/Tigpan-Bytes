@@ -74,16 +74,6 @@ Vector2.prototype = {
 	}
 }
 
-const EnemyTypes = {
-	Hexagon: 0,
-	Circle: 1,
-	Square: 2,
-	Cross: 3,
-	Arrow: 4,
-	Trapezoid: 5,
-	Elite: 6
-};
-
 class Enemy
 {
 	constructor(position, player, health)
@@ -120,7 +110,7 @@ class EHexagon extends Enemy // Hexagon dies in one hit no matter what
 	{
 		super(position, player, 0);
 
-		this.accelerationSpeed = 0.02;
+		this.accelerationSpeed = 0.01;
 		this.moveSpeed = 2.2;
 		this.radius = 7;
 
@@ -273,6 +263,187 @@ class ECircle extends Enemy // Circle will split into three when killed
 	}
 }
 
+class ESquare extends Enemy // Hexagon dies in one hit no matter what
+{
+	constructor(position, player)
+	{
+		super(position, player, 40);
+
+		this.accelerationSpeed = 0.07;
+		this.moveSpeed = 0.8;
+		this.radius = 15;
+
+		this.shootFrames = 0;
+
+		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
+		this.velocity.normalize();
+		this.positionOffset = new Vector2(random(-15, 15), random(-15, 15));
+	}
+
+	collides(point, extra)
+	{
+		return this.position.distance(point) <= this.radius + extra;
+	}
+
+	attack(damage) // Hexagon dies in one hit no matter what
+	{
+		this.health -= damage;
+		this.shootFrames += 50;
+		return (this.health <= 0);
+	}
+
+	update() // return true if it dies
+	{
+		this.move();
+
+		this.shootFrames++;
+
+		if (this.shootFrames > 200)
+		{
+			this.shootFrames = random(0, 50);
+
+			enemyProjectiles.push(new Projectile(this.position, this.velocity.multiply(3.2), 5, [130, 0, 0], [255, 0, 0], 2, 5));
+		}
+
+		if (this.position.distance(this.player.position) <= this.radius + player.radius)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	move()
+	{
+		this.velocity = this.velocity.moveTowards(this.player.position.subtract(this.position).add(this.positionOffset), this.accelerationSpeed);
+		this.velocity.normalize();
+
+		if (this.position.x < 0)
+		{
+			this.velocity.x = Math.abs(this.velocity.x);
+		}
+		if (this.position.y < 0)
+		{
+			this.velocity.y = Math.abs(this.velocity.y);
+		}
+		if (this.position.x > windowWidth)
+		{
+			this.velocity.x = -Math.abs(this.velocity.x);
+		}
+		if (this.position.y > windowHeight)
+		{
+			this.velocity.y = -Math.abs(this.velocity.y);
+		}
+
+		this.position = this.position.add(this.velocity.multiply(this.moveSpeed));
+	}
+
+	render()
+	{
+		fill(0);
+		stroke(190, 60, 40);
+		strokeWeight(2);
+
+		rect(this.position.x - this.radius, this.position.y - this.radius, this.radius * 2, this.radius * 2);
+	}
+}
+
+class ECross extends Enemy // Hexagon dies in one hit no matter what
+{
+	constructor(position, player)
+	{
+		super(position, player, 40);
+
+		this.moveSpeed = 4.2;
+		this.radius = 15;
+
+		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
+		this.velocity.normalize();
+		
+		this.looking = new Vector2(random(-1, 1), random(-1, 1));
+		this.looking.normalize();
+	}
+
+	collides(point, extra)
+	{
+		return this.position.distance(point) <= this.radius + extra;
+	}
+
+	attack(damage)
+	{
+		this.health -= damage;
+		return (this.health <= 0);
+	}
+
+	update() // return true if it dies
+	{
+		this.looking = this.looking.rotate(0.05);
+		this.move();
+
+		if (this.position.distance(this.player.position) <= this.radius + player.radius)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	move()
+	{
+		if (this.position.x < 0)
+		{
+			this.velocity.x = random(1);
+			this.velocity.y = random(-1, 1);
+			this.velocity.normalize();
+			this.shoot();
+		}
+		if (this.position.y < 0)
+		{
+			this.velocity.x = random(-1, 1);
+			this.velocity.y = random(1);
+			this.velocity.normalize();
+			this.shoot();
+		}
+		if (this.position.x > windowWidth)
+		{
+			this.velocity.x = random(1) - 2;
+			this.velocity.y = random(-1, 1);
+			this.velocity.normalize();
+			this.shoot();
+		}
+		if (this.position.y > windowHeight)
+		{
+			this.velocity.x = random(-1, 1);
+			this.velocity.y = random(1) - 2;
+			this.velocity.normalize();
+			this.shoot();
+		}
+
+		this.position = this.position.add(this.velocity.multiply(this.moveSpeed));
+	}
+
+	shoot()
+	{
+		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(3.2), 5, [130, 0, 0], [255, 0, 0], 2, 5));
+		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(-3.2), 5, [130, 0, 0], [255, 0, 0], 2, 5));
+		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(3.2).rotate(1.57), 5, [130, 0, 0], [255, 0, 0], 2, 5));
+		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(-3.2).rotate(1.57), 5, [130, 0, 0], [255, 0, 0], 2, 5));
+	}
+
+	render()
+	{
+		fill(0);
+		stroke(255, 60, 255);
+		strokeWeight(2);
+
+		let v1 = this.position.add(this.looking.multiply(this.radius));
+		let v2 = this.position.subtract(this.looking.multiply(this.radius));
+		let v3 = this.position.add(this.looking.multiply(this.radius).rotate(1.57));
+		let v4 = this.position.subtract(this.looking.multiply(this.radius).rotate(1.57));
+
+		line(v1.x, v1.y, v2.x, v2.y);
+		line(v3.x, v3.y, v4.x, v4.y);
+	}
+}
+
 class Projectile
 {
 	constructor(position, velocity, radius, fill, stroke, strokeSize, damage)
@@ -314,6 +485,11 @@ class Player
 
 		this.speed = 0.5;
 		this.shootFrames = 0;
+	}
+
+	collides(point, extra)
+	{
+		return this.position.distance(point) <= this.radius + extra;
 	}
 
 	update()
@@ -407,13 +583,21 @@ function setup()
 	createCanvas(windowWidth, windowHeight);
 
 	player = new Player();
-	for (let i = 0; i < 50; i++)
+	for (let i = 0; i < 30; i++)
 	{
 		enemys.push(new EHexagon(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
 	}
-	for (let i = 0; i < 20; i++)
+	for (let i = 0; i < 10; i++)
 	{
 		enemys.push(new ECircle(new Vector2(random(0, windowWidth), random(0, windowHeight)), player, true));
+	}
+	for (let i = 0; i < 5; i++)
+	{
+		enemys.push(new ESquare(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
+	}
+	for (let i = 0; i < 15; i++)
+	{
+		enemys.push(new ECross(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
 	}
 }
 
@@ -444,6 +628,7 @@ function draw()
 	}
 
 	player.render();
+
 	for (let i = 0; i < enemys.length; i++)
 	{
 		if (enemys[i].update())
@@ -454,6 +639,20 @@ function draw()
 		else
 		{
 			enemys[i].render();
+		}
+	}
+
+	for (let i = 0; i < enemyProjectiles.length; i++)
+	{
+		enemyProjectiles[i].update();
+		enemyProjectiles[i].render();
+
+		if (player.collides(enemyProjectiles[i].position, enemyProjectiles[i].radius))
+		{
+			player.health -= enemyProjectiles[i].damage;
+			enemyProjectiles.splice(i, 1);
+			i--;
+			break;
 		}
 	}
 }
