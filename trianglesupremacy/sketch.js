@@ -93,7 +93,7 @@ class Enemy
 		this.health = health;
 	}
 
-	collides(point)
+	collides(point, extra)
 	{
 
 	}
@@ -120,7 +120,7 @@ class EHexagon extends Enemy // Hexagon dies in one hit no matter what
 	{
 		super(position, player, 0);
 
-		this.accelerationSpeed = 0.03;
+		this.accelerationSpeed = 0.02;
 		this.moveSpeed = 2.2;
 		this.radius = 7;
 
@@ -130,12 +130,12 @@ class EHexagon extends Enemy // Hexagon dies in one hit no matter what
 
 		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
 		this.velocity.normalize();
-		this.positionOffset = new Vector2(random(-25, 25), random(-25, 25));
+		this.positionOffset = new Vector2(random(-75, 75), random(-75, 75));
 	}
 
-	collides(point)
+	collides(point, extra)
 	{
-		return this.position.distance(point) <= this.radius;
+		return this.position.distance(point) <= this.radius + extra;
 	}
 
 	attack(damage) // Hexagon dies in one hit no matter what
@@ -195,23 +195,35 @@ class ECircle extends Enemy // Circle will split into three when killed
 {
 	constructor(position, player, canSplit)
 	{
-		super(position, player, 30);
+		super(position, player, 30 * (canSplit ? 1: 0.5));
 
 		this.moveSpeed = 1.6;
-		this.radius = 25 * (canSplit ? 1: 0.5);
+		this.radius = 25 * (canSplit ? 1: 0.4);
+		this.canSplit = canSplit;
 
 		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
 		this.velocity.normalize();
 	}
 
-	collides(point)
+	collides(point, extra)
 	{
-		return this.position.distance(point) <= this.radius;
+		return this.position.distance(point) <= this.radius + extra;
 	}
 
 	attack(damage) 
 	{
-		return true;
+		this.health -= damage;
+		if (this.health <= 0)
+		{
+			if (this.canSplit)
+			{
+				enemys.push(new ECircle(this.position, this.player, false));
+				enemys.push(new ECircle(this.position, this.player, false));
+				enemys.push(new ECircle(this.position, this.player, false));
+			}
+			return true;
+		}
+		return false;
 	}
 
 	update() // return true if it dies
@@ -245,7 +257,14 @@ class ECircle extends Enemy // Circle will split into three when killed
 	render()
 	{
 		fill(0);
-		stroke(80, 255, 150);
+		if (this.canSplit)
+		{
+			stroke(80, 255, 150);
+		}
+		else
+		{
+			stroke(40, 210, 100);
+		}
 		strokeWeight(2);
 
 		beginShape();
@@ -256,9 +275,31 @@ class ECircle extends Enemy // Circle will split into three when killed
 
 class Projectile
 {
-	constructor(position, velocity, radius, fill, stroke, strokeSize)
+	constructor(position, velocity, radius, fill, stroke, strokeSize, damage)
 	{
-		
+		this.position = position;
+		this.velocity = velocity;
+		this.radius = radius;
+		this.fill = fill;
+		this.stroke = stroke;
+		this.strokeSize = strokeSize;
+		this.damage = damage;
+	}
+
+	update() //return true if dead
+	{
+		this.position = this.position.add(this.velocity);
+
+		return (this.position.x < 0 || this.position.y < 0 || this.position.x > windowWidth || this.position.y > windowHeight);
+	}
+
+	render()
+	{
+		fill(this.fill[0], this.fill[1], this.fill[2]);
+		stroke(this.stroke[0], this.stroke[1], this.stroke[2]);
+		strokeWeight(this.strokeSize);
+
+		ellipse(this.position.x, this.position.y, this.radius * 2);
 	}
 }
 
@@ -283,17 +324,21 @@ class Player
 
 	shoot()
 	{
-		shootFrames++;
+		this.shootFrames++;
 
-		if (this.shootFrames > 30)
+		if (this.shootFrames > 30 && mouseIsPressed)
 		{
-			shootFrames = 0;
+			this.shootFrames = 0;
+
+			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(5), 7, [125, 125, 58], [255,255,255], 3, 20));
+			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(4.6).rotate(-0.05), 5, [70, 125, 70], [255,255,255], 2, 10));
+			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(4.6).rotate(0.05), 5, [70, 125, 70], [255,255,255], 2, 10));
 		}
 	}
 	
 	move()
 	{
-		this.rotation = this.position.subtract(new Vector2(mouseX, mouseY));
+		this.rotation = new Vector2(mouseX, mouseY).subtract(this.position);
 		this.rotation.normalized();
 
 		this.velocity = this.velocity.multiply(0.8);
@@ -342,14 +387,15 @@ class Player
 		stroke(255, 255, 255);
 		strokeWeight(4);
 
-		let v1 = this.position.subtract(this.rotation.rotate(-40).multiply(this.radius));
-		let v2 = this.position.subtract(this.rotation.rotate(40).multiply(this.radius));
-		let v3 = this.position.subtract(this.rotation.multiply(this.radius));
+		let v1 = this.position.add(this.rotation.rotate(-40).multiply(this.radius));
+		let v2 = this.position.add(this.rotation.rotate(40).multiply(this.radius));
+		let v3 = this.position.add(this.rotation.multiply(this.radius));
 
 		triangle(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y)
 	}
 }
 
+let playerProjectiles = new Array();
 let player;
 let enemyProjectiles = new Array();
 let enemys = new Array();
@@ -361,10 +407,13 @@ function setup()
 	createCanvas(windowWidth, windowHeight);
 
 	player = new Player();
-	for (let i = 0; i < 20; i++)
+	for (let i = 0; i < 50; i++)
 	{
 		enemys.push(new EHexagon(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
-		enemys.push(new ECircle(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
+	}
+	for (let i = 0; i < 20; i++)
+	{
+		enemys.push(new ECircle(new Vector2(random(0, windowWidth), random(0, windowHeight)), player, true));
 	}
 }
 
@@ -374,6 +423,26 @@ function draw()
 	background(0);
 
 	player.update();
+
+	for (let i = 0; i < playerProjectiles.length; i++)
+	{
+		playerProjectiles[i].update();
+		playerProjectiles[i].render();
+		for (let e = 0; e < enemys.length; e++)
+		{
+			if (enemys[e].collides(playerProjectiles[i].position, playerProjectiles[i].radius))
+			{
+				if (enemys[e].attack(playerProjectiles[i].damage))
+				{
+					enemys.splice(e, 1);
+				}
+				playerProjectiles.splice(i, 1);
+				i--;
+				break;
+			}
+		}
+	}
+
 	player.render();
 	for (let i = 0; i < enemys.length; i++)
 	{
