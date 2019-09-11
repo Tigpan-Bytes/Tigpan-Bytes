@@ -433,6 +433,7 @@ function draw() // draws only the gui when the dungeon isn't generated
 		}
 		else if (genState == 0)
 		{
+			noStroke();
 			textSize(30);
 			fill(0);
 			text('0% completed.', 10, 10);

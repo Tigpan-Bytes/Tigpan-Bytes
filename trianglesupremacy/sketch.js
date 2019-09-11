@@ -53,8 +53,6 @@ Vector2.prototype = {
 
 	normalized: function() {
 		let mag = this.magnitude();
-		this.x /= mag;
-		this.y /= mag;
 		return new Vector2(this.x / mag, this.y / mag);
 	},
 
@@ -76,32 +74,18 @@ Vector2.prototype = {
 
 class Enemy
 {
-	constructor(position, player, health, damage)
+	constructor(position, player, radius, health, damage)
 	{
 		this.position = position;
 		this.player = player;
 		this.health = health;
 		this.damage = damage;
+		this.radius = radius;
 	}
 
 	collides(point, extra)
 	{
-
-	}
-
-	attack(damage) // returns true if killed
-	{
-		return false;
-	}
-
-	update() // return true if it dies
-	{
-		return false;
-	}
-
-	render()
-	{
-
+		return this.position.distance(point) <= this.radius + extra;
 	}
 }
 
@@ -109,11 +93,10 @@ class EHexagon extends Enemy // Hexagon dies in one hit no matter what
 {
 	constructor(position, player)
 	{
-		super(position, player, 0, 5);
+		super(position, player, 8, 0, 5);
 
 		this.accelerationSpeed = 0.02;
 		this.moveSpeed = 2.2;
-		this.radius = 8;
 
 		//These values only used for rendering
 		this.yHeight = Math.sqrt(3) * this.radius / 2;
@@ -124,11 +107,6 @@ class EHexagon extends Enemy // Hexagon dies in one hit no matter what
 		this.positionOffset = new Vector2(random(-75, 75), random(-75, 75));
 	}
 
-	collides(point, extra)
-	{
-		return this.position.distance(point) <= this.radius + extra;
-	}
-
 	attack(damage) // Hexagon dies in one hit no matter what
 	{
 		return true;
@@ -136,9 +114,23 @@ class EHexagon extends Enemy // Hexagon dies in one hit no matter what
 
 	update() // return true if it dies
 	{
-		this.velocity = this.velocity.moveTowards(this.player.position.subtract(this.position).add(this.positionOffset), this.accelerationSpeed);
+		//dont offset the target if its close to the player
+		let distance = this.position.distance(this.player.position);
+		if (distance < 175)
+		{
+			this.velocity = this.velocity.moveTowards(this.player.position.subtract(this.position), this.accelerationSpeed);
+		}
+		else if (distance > 600)
+		{
+			this.velocity = this.velocity.moveTowards(this.player.position.subtract(this.position).add(this.positionOffset.multiply(3)), this.accelerationSpeed / 3);
+		}
+		else
+		{
+			this.velocity = this.velocity.moveTowards(this.player.position.subtract(this.position).add(this.positionOffset), this.accelerationSpeed);
+		}
 		this.velocity.normalize();
 
+		//restrict to not go off the edge
 		if (this.position.x < 0)
 		{
 			this.velocity.x = Math.abs(this.velocity.x);
@@ -158,7 +150,7 @@ class EHexagon extends Enemy // Hexagon dies in one hit no matter what
 
 		this.position = this.position.add(this.velocity.multiply(this.moveSpeed));
 
-		if (this.position.distance(this.player.position) <= this.radius + player.radius)
+		if (distance <= this.radius + player.radius)
 		{
 			return true;
 		}
@@ -171,6 +163,7 @@ class EHexagon extends Enemy // Hexagon dies in one hit no matter what
 		stroke(40, 190, 230);
 		strokeWeight(2);
 
+		//draws the hex
 		beginShape();
 		vertex(this.position.x - this.radius, this.position.y);
 		vertex(this.position.x - this.xWidth, this.position.y + this.yHeight);
@@ -186,19 +179,13 @@ class ECircle extends Enemy // Circle will split into three when killed
 {
 	constructor(position, player, canSplit)
 	{
-		super(position, player, 30 * (canSplit ? 1: 0.2), 5);
+		super(position, player, 25 * (canSplit ? 1: 0.4), 30 * (canSplit ? 1: 0.2), canSplit ? 15: 10);
 
 		this.moveSpeed = 1.6 * (canSplit ? 1: 0.8);
-		this.radius = 25 * (canSplit ? 1: 0.4);
 		this.canSplit = canSplit;
 
 		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
 		this.velocity.normalize();
-	}
-
-	collides(point, extra)
-	{
-		return this.position.distance(point) <= this.radius + extra;
 	}
 
 	attack(damage) 
@@ -206,11 +193,12 @@ class ECircle extends Enemy // Circle will split into three when killed
 		this.health -= damage;
 		if (this.health <= 0)
 		{
+			//when it dies split
 			if (this.canSplit)
 			{
-				enemys.push(new ECircle(this.position, this.player, false));
-				enemys.push(new ECircle(this.position, this.player, false));
-				enemys.push(new ECircle(this.position, this.player, false));
+				enemys.push(new ECircle(this.position.add(new Vector2(random(-15, 15), random(-15, 15))), this.player, false));
+				enemys.push(new ECircle(this.position.add(new Vector2(random(-15, 15), random(-15, 15))), this.player, false));
+				enemys.push(new ECircle(this.position.add(new Vector2(random(-15, 15), random(-15, 15))), this.player, false));
 			}
 			return true;
 		}
@@ -264,29 +252,23 @@ class ECircle extends Enemy // Circle will split into three when killed
 	}
 }
 
-class ESquare extends Enemy 
+class ESquare extends Enemy //moves slow randomly and shoots at player
 {
 	constructor(position, player)
 	{
-		super(position, player, 50, 10);
+		super(position, player, 15, 40, 15);
 
 		this.accelerationSpeed = 0.07;
 		this.moveSpeed = 0.8;
-		this.radius = 15;
 
 		this.shootFrames = 0;
 
 		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
 		this.velocity.normalize();
-		this.positionOffset = new Vector2(random(-15, 15), random(-15, 15));
+		this.target = new Vector2(random(0, windowWidth), random(0, windowHeight));
 	}
 
-	collides(point, extra)
-	{
-		return this.position.distance(point) <= this.radius + extra;
-	}
-
-	attack(damage) // Hexagon dies in one hit no matter what
+	attack(damage) 
 	{
 		this.health -= damage;
 		this.shootFrames += 50;
@@ -297,13 +279,15 @@ class ESquare extends Enemy
 	{
 		this.move();
 
+		//shooting timer
 		this.shootFrames++;
 
 		if (this.shootFrames > 200)
 		{
 			this.shootFrames = random(0, 50);
 
-			enemyProjectiles.push(new Projectile(this.position, this.velocity.rotate(random(-0.3, 0.3)).multiply(3.2), 5, [130, 0, 0], [255, 0, 0], 2, 5));
+			//spawn a projectile
+			enemyProjectiles.push(new Projectile(this.position, this.player.position.subtract(this.position).rotate(random(-0.5, 0.5)).normalized().multiply(3.2), 5, [130, 0, 0], [255, 0, 0], 2, 10));
 		}
 
 		if (this.position.distance(this.player.position) <= this.radius + player.radius)
@@ -315,7 +299,11 @@ class ESquare extends Enemy
 
 	move()
 	{
-		this.velocity = this.velocity.moveTowards(this.player.position.subtract(this.position).add(this.positionOffset), this.accelerationSpeed);
+		if (this.position.distance(this.target) < 20)
+		{
+			this.target = new Vector2(random(0, windowWidth), random(0, windowHeight));
+		}
+		this.velocity = this.velocity.moveTowards(this.target.subtract(this.position), this.accelerationSpeed);
 		this.velocity.normalize();
 
 		if (this.position.x < 0)
@@ -348,25 +336,19 @@ class ESquare extends Enemy
 	}
 }
 
-class ECross extends Enemy 
+class ECross extends Enemy //bounces off the walls erratically and shoots when hitting a wall
 {
 	constructor(position, player)
 	{
-		super(position, player, 30, 10);
+		super(position, player, 15, 30, 20);
 
 		this.moveSpeed = 3.8;
-		this.radius = 15;
 
 		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
 		this.velocity.normalize();
 		
 		this.looking = new Vector2(random(-1, 1), random(-1, 1));
 		this.looking.normalize();
-	}
-
-	collides(point, extra)
-	{
-		return this.position.distance(point) <= this.radius + extra;
 	}
 
 	attack(damage)
@@ -423,10 +405,10 @@ class ECross extends Enemy
 
 	shoot()
 	{
-		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(3.2), 5, [130, 0, 0], [255, 0, 0], 2, 5));
-		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(-3.2), 5, [130, 0, 0], [255, 0, 0], 2, 5));
-		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(3.2).rotate(1.57), 5, [130, 0, 0], [255, 0, 0], 2, 5));
-		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(-3.2).rotate(1.57), 5, [130, 0, 0], [255, 0, 0], 2, 5));
+		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(3.2), 5, [130, 0, 0], [255, 0, 0], 2, 10));
+		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(-3.2), 5, [130, 0, 0], [255, 0, 0], 2, 10));
+		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(3.2).rotate(1.57), 5, [130, 0, 0], [255, 0, 0], 2, 10));
+		enemyProjectiles.push(new Projectile(this.position, this.looking.multiply(-3.2).rotate(1.57), 5, [130, 0, 0], [255, 0, 0], 2, 10));
 	}
 
 	render()
@@ -445,47 +427,32 @@ class ECross extends Enemy
 	}
 }
 
-class EDiamond extends Enemy 
+class EDiamond extends Enemy //lots of health that moves toward the player quickly
 {
 	constructor(position, player)
 	{
-		super(position, player, 60, 25);
+		super(position, player, 20, 140, 30);
 
 		this.accelerationSpeed = 0.15;
 		this.moveSpeed = 6.7;
-		this.radius = 20;
 
 		this.movementFrames = 0;
 
 		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
 		this.velocity.normalize();
-		this.positionOffset = new Vector2(random(-25, 25), random(-25, 25));
-	}
-
-	collides(point, extra)
-	{
-		return this.position.distance(point) <= this.radius + extra;
+		this.positionOffset = new Vector2(random(-15, 15), random(-15, 15));
 	}
 
 	attack(damage) // Hexagon dies in one hit no matter what
 	{
 		this.health -= damage;
-		this.shootFrames += 50;
+
 		return (this.health <= 0);
 	}
 
 	update() // return true if it dies
 	{
 		this.move();
-
-		this.shootFrames++;
-
-		if (this.shootFrames > 200)
-		{
-			this.shootFrames = random(0, 50);
-
-			enemyProjectiles.push(new Projectile(this.position, this.velocity.multiply(3.2), 5, [130, 0, 0], [255, 0, 0], 2, 5));
-		}
 
 		if (this.position.distance(this.player.position) <= this.radius + player.radius)
 		{
@@ -513,6 +480,7 @@ class EDiamond extends Enemy
 			this.velocity.y = -Math.abs(this.velocity.y);
 		}
 
+		//movement "jolt" timer
 		this.movementFrames++;
 		if (this.movementFrames < 20)
 		{
@@ -613,16 +581,17 @@ class Player
 		{
 			this.shootFrames = 0;
 
+			//bullet in the center does 2x damage
 			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(6), 7, [125, 125, 58], [255,255,255], 3, 20));
-			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(5.6).rotate(-0.05), 5, [70, 125, 70], [255,255,255], 2, 10));
-			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(5.6).rotate(0.05), 5, [70, 125, 70], [255,255,255], 2, 10));
+			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(5.6).rotate(-0.07), 5, [70, 125, 70], [255,255,255], 2, 10));
+			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(5.6).rotate(0.07), 5, [70, 125, 70], [255,255,255], 2, 10));
 		}
 	}
 	
 	move()
 	{
 		this.rotation = new Vector2(mouseX, mouseY).subtract(this.position);
-		this.rotation.normalized();
+		this.rotation.normalize();
 
 		this.velocity = this.velocity.multiply(0.8);
 
@@ -685,6 +654,8 @@ let enemys = new Array();
 
 let gameRunning = false;
 let wave = 0;
+let biggestWave = 0;
+let spawnSide = false;
 
 function setup() 
 {
@@ -710,7 +681,10 @@ function drawTitle()
 	fill(210);
 	text("WASD to Move. Mouse to aim. Left mouse button to shoot.", windowWidth / 2, 180);
 	text("Survive as many waves of shapes as possible.", windowWidth / 2, 210);
-	text("Press space to start or restart at any point.", windowWidth / 2, 240);
+	text("The next wave will come from the red zone.", windowWidth / 2, 240);
+	text("Press M to start or restart at any point.", windowWidth / 2, windowHeight / 2);
+
+	text("Highest wave this session: " + biggestWave, windowWidth / 2, windowHeight - 10);
 }
 
 function startGame()
@@ -729,46 +703,66 @@ function startGame()
 function spawnWave()
 {
 	wave++;
-	for (let i = 0; i < 7 + wave * 3; i++)
+	if (wave > biggestWave)
 	{
-		enemys.push(new EHexagon(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
+		biggestWave = wave;
 	}
-	for (let i = 0; i < 1 + wave * 1; i++)
+
+	for (let i = 0; i < 7 + wave * random(1.5, 2.5); i++)
 	{
-		enemys.push(new ECircle(new Vector2(random(0, windowWidth), random(0, windowHeight)), player, true));
+		enemys.push(new EHexagon(getSpawn(), player));
+	}
+	for (let i = 0; i < 1 + wave * random(0.5, 1); i++)
+	{
+		enemys.push(new ECircle(getSpawn(), player, true));
 	}
 	if (wave > 1)
 	{
-		for (let i = 0; i < 1 + wave * random(1,2); i++)
+		for (let i = 0; i < 0 + wave * random(0.4,8); i++)
 		{
-			enemys.push(new ESquare(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
+			enemys.push(new ESquare(getSpawn(), player));
 		}
 	}
 	if (wave > 2)
 	{
-		for (let i = 0; i < 0 + wave * random(0.5,1.5); i++)
+		for (let i = 0; i < 0 + wave * random(0.5, 1); i++)
 		{
-			enemys.push(new ECross(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
+			enemys.push(new ECross(getSpawn(), player));
 		}
 	}
 	if (wave > 3)
 	{
-		for (let i = 0; i < -1 + wave * random(0.5,1.0); i++)
+		for (let i = 0; i < -1 + wave * random(0.3,0.7); i++)
 		{
-			enemys.push(new EDiamond(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
+			enemys.push(new EDiamond(getSpawn(), player));
 		}
 	}
+	spawnSide = (0.2 < random(1) ? !spawnSide : spawnSide);
+}
+
+function getSpawn()
+{
+	return (spawnSide ? new Vector2(random(windowWidth * 0.8, windowWidth), random(0, windowHeight)) : new Vector2(random(0, windowWidth * 0.2), random(0, windowHeight))); 
 }
 
 function drawGame()
 {
 	//draw background colour
 	background(0);
+	fill(50, 0, 0);
+	noStroke();
+	if (spawnSide)
+	{
+		rect(windowWidth - 20, 0, 20, windowHeight);
+	}
+	else
+	{
+		rect(0, 0, 20, windowHeight);
+	}
 
 	textAlign(LEFT);
 	textSize(30);
 	fill(255);
-	noStroke();
 	text("Wave: " + wave, 10, 30);
 	text("Health: " + player.health, 10, 70);
 
@@ -790,6 +784,7 @@ function drawGame()
 				if (enemys[e].attack(playerProjectiles[i].damage))
 				{
 					enemys.splice(e, 1);
+					e--;
 				}
 				playerProjectiles.splice(i, 1);
 				i--;
@@ -828,7 +823,7 @@ function drawGame()
 		}
 	}
 
-	if (enemys.length === 0)
+	if (enemys.length <= wave * 2 + 2)
 	{
 		spawnWave();
 	}
@@ -848,7 +843,7 @@ function draw()
 
 function keyPressed()
 {
-	if (keyCode === 32)
+	if (keyCode === 77) //m
 	{
 		startGame();
 	}
