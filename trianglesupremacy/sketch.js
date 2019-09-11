@@ -76,11 +76,12 @@ Vector2.prototype = {
 
 class Enemy
 {
-	constructor(position, player, health)
+	constructor(position, player, health, damage)
 	{
 		this.position = position;
 		this.player = player;
 		this.health = health;
+		this.damage = damage;
 	}
 
 	collides(point, extra)
@@ -108,11 +109,11 @@ class EHexagon extends Enemy // Hexagon dies in one hit no matter what
 {
 	constructor(position, player)
 	{
-		super(position, player, 0);
+		super(position, player, 0, 5);
 
-		this.accelerationSpeed = 0.01;
+		this.accelerationSpeed = 0.02;
 		this.moveSpeed = 2.2;
-		this.radius = 7;
+		this.radius = 8;
 
 		//These values only used for rendering
 		this.yHeight = Math.sqrt(3) * this.radius / 2;
@@ -185,7 +186,7 @@ class ECircle extends Enemy // Circle will split into three when killed
 {
 	constructor(position, player, canSplit)
 	{
-		super(position, player, 30 * (canSplit ? 1: 0.5));
+		super(position, player, 30 * (canSplit ? 1: 0.5), 5);
 
 		this.moveSpeed = 1.6;
 		this.radius = 25 * (canSplit ? 1: 0.4);
@@ -263,11 +264,11 @@ class ECircle extends Enemy // Circle will split into three when killed
 	}
 }
 
-class ESquare extends Enemy // Hexagon dies in one hit no matter what
+class ESquare extends Enemy 
 {
 	constructor(position, player)
 	{
-		super(position, player, 40);
+		super(position, player, 50, 10);
 
 		this.accelerationSpeed = 0.07;
 		this.moveSpeed = 0.8;
@@ -302,7 +303,7 @@ class ESquare extends Enemy // Hexagon dies in one hit no matter what
 		{
 			this.shootFrames = random(0, 50);
 
-			enemyProjectiles.push(new Projectile(this.position, this.velocity.multiply(3.2), 5, [130, 0, 0], [255, 0, 0], 2, 5));
+			enemyProjectiles.push(new Projectile(this.position, this.velocity.rotate(random(-0.3, 0.3)).multiply(3.2), 5, [130, 0, 0], [255, 0, 0], 2, 5));
 		}
 
 		if (this.position.distance(this.player.position) <= this.radius + player.radius)
@@ -347,13 +348,13 @@ class ESquare extends Enemy // Hexagon dies in one hit no matter what
 	}
 }
 
-class ECross extends Enemy // Hexagon dies in one hit no matter what
+class ECross extends Enemy 
 {
 	constructor(position, player)
 	{
-		super(position, player, 40);
+		super(position, player, 30, 10);
 
-		this.moveSpeed = 4.2;
+		this.moveSpeed = 3.8;
 		this.radius = 15;
 
 		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
@@ -444,6 +445,111 @@ class ECross extends Enemy // Hexagon dies in one hit no matter what
 	}
 }
 
+class EDiamond extends Enemy 
+{
+	constructor(position, player)
+	{
+		super(position, player, 60, 25);
+
+		this.accelerationSpeed = 0.15;
+		this.moveSpeed = 6.7;
+		this.radius = 20;
+
+		this.movementFrames = 0;
+
+		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
+		this.velocity.normalize();
+		this.positionOffset = new Vector2(random(-25, 25), random(-25, 25));
+	}
+
+	collides(point, extra)
+	{
+		return this.position.distance(point) <= this.radius + extra;
+	}
+
+	attack(damage) // Hexagon dies in one hit no matter what
+	{
+		this.health -= damage;
+		this.shootFrames += 50;
+		return (this.health <= 0);
+	}
+
+	update() // return true if it dies
+	{
+		this.move();
+
+		this.shootFrames++;
+
+		if (this.shootFrames > 200)
+		{
+			this.shootFrames = random(0, 50);
+
+			enemyProjectiles.push(new Projectile(this.position, this.velocity.multiply(3.2), 5, [130, 0, 0], [255, 0, 0], 2, 5));
+		}
+
+		if (this.position.distance(this.player.position) <= this.radius + player.radius)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	move()
+	{
+		if (this.position.x < 0)
+		{
+			this.velocity.x = Math.abs(this.velocity.x);
+		}
+		if (this.position.y < 0)
+		{
+			this.velocity.y = Math.abs(this.velocity.y);
+		}
+		if (this.position.x > windowWidth)
+		{
+			this.velocity.x = -Math.abs(this.velocity.x);
+		}
+		if (this.position.y > windowHeight)
+		{
+			this.velocity.y = -Math.abs(this.velocity.y);
+		}
+
+		this.movementFrames++;
+		if (this.movementFrames < 20)
+		{
+			this.position = this.position.add(this.velocity.multiply(this.moveSpeed));
+		}
+		else if (this.movementFrames < 60)
+		{
+			this.velocity = this.velocity.moveTowards(this.player.position.subtract(this.position).add(this.positionOffset), this.accelerationSpeed);
+			this.velocity.normalize();
+	
+		}
+		else
+		{
+			this.positionOffset = new Vector2(random(-100, 100), random(-100, 100));
+			this.movementFrames = 0;
+		}
+	}
+
+	render()
+	{
+		fill(0);
+		stroke(255, 255, 130);
+		strokeWeight(2);
+
+		beginShape();
+		vertex(this.position.x + this.velocity.x * this.radius * 1.5, 
+			this.position.y + this.velocity.y * this.radius * 1.5);
+		vertex(this.position.x + this.velocity.rotate(1.57).x * this.radius * 0.8, 
+			this.position.y + this.velocity.rotate(1.57).y * this.radius * 0.8);
+		vertex(this.position.x - this.velocity.x * this.radius * 1.5, 
+			this.position.y - this.velocity.y * this.radius * 1.5);
+		vertex(this.position.x - this.velocity.rotate(1.57).x * this.radius * 0.8, 
+			this.position.y - this.velocity.rotate(1.57).y * this.radius * 0.8);
+		endShape(CLOSE);
+	}
+}
+
 class Projectile
 {
 	constructor(position, velocity, radius, fill, stroke, strokeSize, damage)
@@ -482,6 +588,7 @@ class Player
 		this.rotation = new Vector2(0, 1);
 		this.velocity = new Vector2(0, 0);
 		this.radius = 15;
+		this.health = 100;
 
 		this.speed = 0.5;
 		this.shootFrames = 0;
@@ -506,9 +613,9 @@ class Player
 		{
 			this.shootFrames = 0;
 
-			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(5), 7, [125, 125, 58], [255,255,255], 3, 20));
-			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(4.6).rotate(-0.05), 5, [70, 125, 70], [255,255,255], 2, 10));
-			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(4.6).rotate(0.05), 5, [70, 125, 70], [255,255,255], 2, 10));
+			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(6), 7, [125, 125, 58], [255,255,255], 3, 20));
+			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(5.6).rotate(-0.05), 5, [70, 125, 70], [255,255,255], 2, 10));
+			playerProjectiles.push(new Projectile(this.position, this.rotation.multiply(5.6).rotate(0.05), 5, [70, 125, 70], [255,255,255], 2, 10));
 		}
 	}
 	
@@ -576,35 +683,99 @@ let player;
 let enemyProjectiles = new Array();
 let enemys = new Array();
 
+let gameRunning = false;
+let wave = 0;
+
 function setup() 
 {
 	//caps frames at 60
 	frameRate(60);
 	createCanvas(windowWidth, windowHeight);
-
-	player = new Player();
-	for (let i = 0; i < 30; i++)
-	{
-		enemys.push(new EHexagon(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
-	}
-	for (let i = 0; i < 10; i++)
-	{
-		enemys.push(new ECircle(new Vector2(random(0, windowWidth), random(0, windowHeight)), player, true));
-	}
-	for (let i = 0; i < 5; i++)
-	{
-		enemys.push(new ESquare(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
-	}
-	for (let i = 0; i < 15; i++)
-	{
-		enemys.push(new ECross(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
-	}
 }
 
-function draw() 
+function drawTitle()
 {
 	//draw background colour
 	background(0);
+	textSize(40);
+	noStroke();
+	fill(255);
+
+	textAlign(CENTER);
+	text("Triangle Supremacy", windowWidth / 2, 50);
+	textSize(20);
+	fill(180);
+	text("The other shapes are invading! Show them triangles are the best!", windowWidth / 2, 90);
+
+	fill(210);
+	text("WASD to Move. Mouse to aim. Left mouse button to shoot.", windowWidth / 2, 180);
+	text("Survive as many waves of shapes as possible.", windowWidth / 2, 210);
+	text("Press space to start or restart at any point.", windowWidth / 2, 240);
+}
+
+function startGame()
+{
+	wave = 0;
+	gameRunning = true;
+
+	player = new Player();
+	enemys = new Array();
+	playerProjectiles = new Array();
+	enemyProjectiles = new Array();
+
+	spawnWave();
+}
+
+function spawnWave()
+{
+	wave++;
+	for (let i = 0; i < 7 + wave * 3; i++)
+	{
+		enemys.push(new EHexagon(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
+	}
+	for (let i = 0; i < 1 + wave * 1; i++)
+	{
+		enemys.push(new ECircle(new Vector2(random(0, windowWidth), random(0, windowHeight)), player, true));
+	}
+	if (wave > 1)
+	{
+		for (let i = 0; i < 1 + wave * random(1,2); i++)
+		{
+			enemys.push(new ESquare(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
+		}
+	}
+	if (wave > 2)
+	{
+		for (let i = 0; i < 0 + wave * random(0.5,1.5); i++)
+		{
+			enemys.push(new ECross(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
+		}
+	}
+	if (wave > 3)
+	{
+		for (let i = 0; i < -1 + wave * random(0.5,1.0); i++)
+		{
+			enemys.push(new EDiamond(new Vector2(random(0, windowWidth), random(0, windowHeight)), player));
+		}
+	}
+}
+
+function drawGame()
+{
+	//draw background colour
+	background(0);
+
+	textAlign(LEFT);
+	textSize(30);
+	fill(255);
+	noStroke();
+	text("Wave: " + wave, 10, 30);
+	text("Health: " + player.health, 10, 70);
+
+	if (player.health <= 0)
+	{
+		gameRunning = false;
+	}
 
 	player.update();
 
@@ -633,6 +804,7 @@ function draw()
 	{
 		if (enemys[i].update())
 		{
+			player.health -= enemys[i].damage;
 			enemys.splice(i, 1);
 			i--;
 		}
@@ -654,5 +826,30 @@ function draw()
 			i--;
 			break;
 		}
+	}
+
+	if (enemys.length === 0)
+	{
+		spawnWave();
+	}
+}
+
+function draw() 
+{
+	if (gameRunning)
+	{
+		drawGame();
+	}
+	else
+	{
+		drawTitle();
+	}
+}
+
+function keyPressed()
+{
+	if (keyCode === 32)
+	{
+		startGame();
 	}
 }
