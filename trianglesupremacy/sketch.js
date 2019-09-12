@@ -160,7 +160,7 @@ class EHexagon extends Enemy // Hexagon dies in one hit no matter what
 
 	render()
 	{
-		fill(0);
+		noFill();
 		stroke(40, 190, 230);
 		strokeWeight(2);
 
@@ -236,7 +236,7 @@ class ECircle extends Enemy // Circle will split into three when killed
 
 	render()
 	{
-		fill(0);
+		noFill();
 		if (this.canSplit)
 		{
 			stroke(80, 255, 150);
@@ -329,7 +329,7 @@ class ESquare extends Enemy //moves slow randomly and shoots at player
 
 	render()
 	{
-		fill(0);
+		noFill();
 		stroke(190, 60, 40);
 		strokeWeight(2);
 
@@ -414,7 +414,7 @@ class ECross extends Enemy //bounces off the walls erratically and shoots when h
 
 	render()
 	{
-		fill(0);
+		noFill();
 		stroke(255, 60, 255);
 		strokeWeight(2);
 
@@ -502,7 +502,7 @@ class EDiamond extends Enemy //lots of health that moves toward the player quick
 
 	render()
 	{
-		fill(0);
+		noFill();
 		stroke(255, 255, 130);
 		strokeWeight(2);
 
