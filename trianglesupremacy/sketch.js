@@ -1,10 +1,11 @@
 // Triangle Supremacy
 // Timothy Letkeman
-// Wednesday 5th September, 2019
+// Monday 9th September, 2019
 //
 // Extra for Experts:
-// - Classes
+// - Classes / Polymorpism
 // - Vector2 implementation
+// - Made my own shapes
 
 function Vector2(x, y) {
 	this.x = x;

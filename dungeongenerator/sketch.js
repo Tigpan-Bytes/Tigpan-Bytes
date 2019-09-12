@@ -402,9 +402,10 @@ function draw() // draws only the gui when the dungeon isn't generated
 {
 	if (!hasGenerated)
 	{	
-		background(255);
+		background(30);
 		if (genState === -1)
 		{
+			background(255);
 			fill('rgba(30%,60%,20%,0.6)');
 			rect(0,0,800,370);
 
@@ -433,9 +434,10 @@ function draw() // draws only the gui when the dungeon isn't generated
 		}
 		else if (genState == 0)
 		{
+			createCanvas(windowWidth, windowHeight);
 			noStroke();
 			textSize(30);
-			fill(0);
+			fill(255);
 			text('0% completed.', 10, 10);
 			textSize(20);
 			text('Placing rooms.', 10, 40);
@@ -443,8 +445,6 @@ function draw() // draws only the gui when the dungeon isn't generated
 		}
 		else if (genState == 1)
 		{
-			textSize(30);
-			fill(0);
 			text('0% completed.', 10, 10);
 			textSize(20);
 			text('Placing rooms.', 10, 40);
@@ -456,7 +456,6 @@ function draw() // draws only the gui when the dungeon isn't generated
 		else if (genState == 2)
 		{
 			textSize(30);
-			fill(0);
 			text((5 + floor(mazeGenState / 5)) + '% completed.', 10, 30);
 			textSize(20);
 			text('Filling in maze corridors.', 10, 70);
@@ -473,7 +472,6 @@ function draw() // draws only the gui when the dungeon isn't generated
 		else if (genState == 3)
 		{
 			textSize(30);
-			fill(0);
 			text('20% completed.', 10, 30);
 			textSize(20);
 			text('Finding region connections.', 10, 70);
@@ -483,7 +481,6 @@ function draw() // draws only the gui when the dungeon isn't generated
 		else if (genState == 4)
 		{
 			textSize(30);
-			fill(0);
 			text('20% completed.', 10, 30);
 			textSize(20);
 			text('Finding region connections.', 10, 70);
@@ -495,7 +492,6 @@ function draw() // draws only the gui when the dungeon isn't generated
 		else if (genState == 5)
 		{
 			textSize(30);
-			fill(0);
 			text((20 + floor(mazeGenState / 3)) + '% completed.', 10, 30);
 			textSize(20);
 			text('Connecting regions.', 10, 70);
@@ -511,7 +507,6 @@ function draw() // draws only the gui when the dungeon isn't generated
 		else if (genState == 6)
 		{
 			textSize(30);
-			fill(0);
 			text('85% completed.', 10, 30);
 			textSize(20);
 			text('Removing dead ends.', 10, 70);
@@ -521,7 +516,6 @@ function draw() // draws only the gui when the dungeon isn't generated
 		else if (genState == 7)
 		{
 			textSize(30);
-			fill(0);
 			text('95% completed.', 10, 30);
 			textSize(20);
 			text('Finishing.', 10, 70);
@@ -542,6 +536,25 @@ function draw() // draws only the gui when the dungeon isn't generated
 function generateRooms() // places the rooms
 {
 	rooms = new Array();
+	//reserves a random corner cell to fix a rare crash where there is no place to put the start as all space has been taken over by rooms
+	let r = floor(random(0,4));
+	let reservedCell;
+	if (r === 0)
+	{
+		reservedCell = [0, 0];
+	}
+	else if (r === 1)
+	{
+		reservedCell = [vertexCols - 1, 0];
+	}
+	else if (r === 2)
+	{
+		reservedCell = [0, vertexRows - 1];
+	}
+	else
+	{
+		reservedCell = [vertexCols - 1, vertexRows - 1];
+	}
 	//attempts to place rooms
 	for (let i = 0; i < roomAttempts; i++)
 	{
@@ -560,6 +573,13 @@ function generateRooms() // places the rooms
 				if (!cells[x * 2 + 1][y * 2 + 1].walled)
 				{
 					succeded = false;
+					break;
+				}
+				//fixed a crash where there is no place to put the start as all space has been taken over by rooms
+				if (x == reservedCell[0] && y == reservedCell[1])
+				{
+					succeded = false;
+					i--;
 					break;
 				}
 			}
@@ -1130,7 +1150,7 @@ function keyPressed() // regenerate the maze, go back to options, or move
 
 		if (keyCode === 74)  // j
 		{
-			cheater = true;
+			cheater = !cheater;
 			render();
 		}
 
