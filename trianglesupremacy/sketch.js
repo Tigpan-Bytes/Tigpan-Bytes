@@ -719,7 +719,7 @@ function spawnWave()
 	}
 	if (wave > 1)
 	{
-		for (let i = 0; i < 0 + wave * random(0.4,8); i++)
+		for (let i = 0; i < 1 + wave * random(0.6, 1.2); i++)
 		{
 			enemys.push(new ESquare(getSpawn(), player));
 		}
