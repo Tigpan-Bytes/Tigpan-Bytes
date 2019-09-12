@@ -392,7 +392,7 @@ function reset()
 		}
 	}
 
-	createCanvas(800, 370);
+	//createCanvas(800, 370);
 	genState = 0;
 	curRegion = 0;
 	hasGenerated = false;
@@ -435,6 +435,7 @@ function draw() // draws only the gui when the dungeon isn't generated
 		else if (genState == 0)
 		{
 			createCanvas(windowWidth, windowHeight);
+			background(30);
 			noStroke();
 			textSize(30);
 			fill(255);
