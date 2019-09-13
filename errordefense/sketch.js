@@ -126,7 +126,7 @@ class SpawnerTile extends Tile
 	{
 		super(x, y, walkable, buildable);
 		this.waveSpawned = waveSpawned;
-		this.health = 100 + Math.pow(waveSpawned + 2, 1.5);
+		//this.health = 100 + Math.pow(waveSpawned + 2, 1.5);
 	}
 
 	render(force)
@@ -174,11 +174,38 @@ class TowerButton
 		}
 		rect(this.x, this.y, this.size, this.size);
 
-		if (icon == 0) //breakpoint
+		if (icon == 0) //delete
+		{
+			stroke(200, 40, 40);
+			strokeWeight(4);
+
+			line(this.x + 10, this.y + 10, this.x - 10 + this.size, this.y - 10 + this.size);
+			line(this.x - 10 + this.size, this.y + 10, this.x + 10, this.y - 10 + this.size);
+		}
+		if (icon == 1) //upgrade
+		{
+			stroke(210, 210, 50);
+			strokeWeight(4);
+
+			line(this.x + 10, this.y - 10 + this.size, this.x + this.size / 2, this.y + this.size / 2);
+			line(this.x - 10 + this.size, this.y - 10 + this.size, this.x + this.size / 2, this.y + this.size / 2);
+
+			line(this.x + 10, this.y + this.size / 2, this.x + this.size / 2, this.y + 10);
+			line(this.x - 10 + this.size, this.y + this.size / 2, this.x + this.size / 2, this.y + 10);
+		}
+		if (icon == 2) //breakpoint
 		{
 			fill(30, 60, 100);
 			stroke(60, 100, 130);
 			strokeWeight(1);
+
+			rect(this.x + 10, this.y + 10, this.size - 20, this.size - 20);
+		}
+		if (icon == 8) //play
+		{
+			fill(90, 180, 90);
+			stroke(0, 255, 0);
+			strokeWeight(2);
 
 			rect(this.x + 10, this.y + 10, this.size - 20, this.size - 20);
 		}
@@ -187,6 +214,102 @@ class TowerButton
 	testClick()
 	{
 		return mouseX >= this.x && mouseY >= this.y && mouseX <= this.x + this.size && mouseY <= this.y + this.size;
+	}
+}
+
+const Element = {
+	Syntax: 0, // green
+	Runtime: 1, // red
+	Logic: 2 // blue
+};
+
+const EnemyType = {
+	Normal: 0, // square
+	Swarm: 1, // tiny circle, no stroke
+	Tank: 2 // Big circle, big stroke
+};
+
+class Enemy
+{
+	constructor(elementType, enemyType, cell, wave)
+	{
+		this.elementType = elementType;
+		this.enemyType = enemyType;
+		this.cell = cell;
+		this.wave = wave;
+
+		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.04 : 0.015));
+		this.speed *= 1 + (wave / 50);
+
+		this.x = cell.x;
+		this.y = cell.y;
+
+		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 5 : 100));
+		this.health *= 0.75 + Math.pow((wave / 2) + 2, 1.5);
+	}
+
+	allowsChange()
+	{
+		return this.cell.psuedoNextOnPath != null;
+	}
+
+	update() // returns a number if it reaches the end
+	{
+		this.x += Math.sign(this.cell.nextOnPath.x - this.x) * this.speed;
+		this.y += Math.sign(this.cell.nextOnPath.y - this.y) * this.speed;
+
+		if (Math.abs(this.x - this.cell.nextOnPath.x) <= this.speed && Math.abs(this.y - this.cell.nextOnPath.y) <= this.speed)
+		{
+			this.cell = this.cell.nextOnPath;
+		}
+
+		if (this.cell == finish)
+		{
+			return (this.enemyType == EnemyType.Normal ? 5 : (this.enemyType == EnemyType.Swarm ? 1 : 20))
+		}
+		return 0;
+	}
+
+	render()
+	{
+		if (this.elementType == Element.Syntax)
+		{
+			fill(110, 220, 110);
+			stroke(0,255,0);
+		}
+		if (this.elementType == Element.Runtime)
+		{
+			fill(220, 110, 110);
+			stroke(255,0,0);
+		}
+		if (this.elementType == Element.Logic)
+		{
+			fill(110, 110, 220);
+			stroke(0,0,255);
+		}
+
+		if (this.enemyType == EnemyType.Normal)
+		{
+			strokeWeight(1);
+
+			rect(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 4, 
+				this.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 4, 
+				(pixelsPerCell - 1) / 2, (pixelsPerCell - 1) / 2);
+		}
+		if (this.enemyType == EnemyType.Swarm)
+		{
+			strokeWeight(1);
+
+			ellipse(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
+				this.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2, pixelsPerCell / 4);
+		}
+		if (this.enemyType == EnemyType.Tank)
+		{
+			strokeWeight(4);
+
+			ellipse(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
+				this.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2, pixelsPerCell / 1.3);
+		}
 	}
 }
 
@@ -203,13 +326,22 @@ let rowSpace;
 let cells;
 let finish;
 let spawners = new Array();
+let enemys = new Array();
 
+let money = 200;
+let wave = 0;
+
+let deleteButton;
+let upgradeButton;
 let breakpointButton;
 let consoleLogButton;
 let forumsButton;
 let testCaseButton;
 let warningsButton;
 let tryCatchButton;
+let startGameButton;
+
+let framesUntilNextWave;
 
 function get2dArray(cols, rows)
 {
@@ -238,14 +370,19 @@ function setup()
 
 	let size = leftBarWidth / 2 - 30;
 
-	breakpointButton = new TowerButton(20, 50, size);
-	consoleLogButton = new TowerButton(40 + size, 50, size);
+	deleteButton = new TowerButton(20, 50, size);
+	upgradeButton = new TowerButton(40 + size, 50, size);
 
-	forumsButton = new TowerButton(20, 70 + size, size);
-	testCaseButton = new TowerButton(40 + size, 70 + size, size);
+	breakpointButton = new TowerButton(20, 70 + size, size);
+	consoleLogButton = new TowerButton(40 + size, 70 + size, size);
 
-	warningsButton = new TowerButton(20, 90 + size * 2, size);
-	tryCatchButton = new TowerButton(40 + size, 90 + size * 2, size);
+	forumsButton = new TowerButton(20, 90 + size * 2, size);
+	testCaseButton = new TowerButton(40 + size, 90 + size * 2, size);
+
+	warningsButton = new TowerButton(20, 110 + size * 3, size);
+	tryCatchButton = new TowerButton(40 + size, 110 + size * 3, size);
+
+	startGameButton = new TowerButton(windowWidth - bottomHeight + 5, windowHeight - bottomHeight + 5, bottomHeight - 10);
 
 	do
 	{
@@ -293,6 +430,10 @@ function setup()
 		}
 
 	} while (!redoPaths())
+
+	enemys.push(new Enemy(Element.Runtime, EnemyType.Normal, spawners[0], 1));
+	enemys.push(new Enemy(Element.Runtime, EnemyType.Swarm, spawners[1], 1));
+	enemys.push(new Enemy(Element.Runtime, EnemyType.Tank, spawners[2], 1));
 }
 
 function redoPaths() //returns true if you can't find a path from all the spawners
@@ -339,6 +480,13 @@ function redoPaths() //returns true if you can't find a path from all the spawne
 			return false;
 		}
 	}
+	for (let i = 0; i < enemys.length; i++)
+	{
+		if (!enemys[i].allowsChange())
+		{
+			return false;
+		}
+	}
 		
 	for (let x = 0; x < cols; x++) 
   	{
@@ -374,6 +522,14 @@ function draw()
 
 function mousePressed()
 {
+	if (deleteButton.testClick())
+	{
+		activateButton(deleteButton);
+	}
+	if (upgradeButton.testClick())
+	{
+		activateButton(upgradeButton);
+	}
 	if (breakpointButton.testClick())
 	{
 		activateButton(breakpointButton);
@@ -404,12 +560,16 @@ function mousePressed()
 	let cell = getCell(x, y);
 	if (cell != null)
 	{
-		if (breakpointButton.active)
+		if (breakpointButton.active && money >= 5 && cell.walkable)
 		{
 			cell.walkable = !cell.walkable;
 			if (!redoPaths())
 			{
 				cell.walkable = !cell.walkable;
+			}
+			else
+			{
+				money -= 5;
 			}
 		}
 	}
@@ -419,6 +579,9 @@ function activateButton(button)
 {
 	let bState = button.active;
 	
+	deleteButton.active = false;
+	upgradeButton.active = false;
+
 	breakpointButton.active = false;
 	consoleLogButton.active = false;
 
@@ -440,7 +603,7 @@ function drawMenus()
 	rect(0, 0, leftBarWidth, windowHeight);
 	rect(leftBarWidth, windowHeight - bottomHeight, windowWidth - leftBarWidth, bottomHeight);
 
-	//breakpoints
+	//left bar
 	textSize(30);
 	textAlign(CENTER);
 	fill(255);
@@ -449,24 +612,38 @@ function drawMenus()
 
 	let size = leftBarWidth / 2 - 30;
 
-	breakpointButton.render(0);
-	consoleLogButton.render();
+	deleteButton.render(0);
+	upgradeButton.render(1);
 
-	forumsButton.render();
-	testCaseButton.render();
+	breakpointButton.render(2);
+	consoleLogButton.render(3);
 
-	warningsButton.render();
-	tryCatchButton.render();
+	forumsButton.render(4);
+	testCaseButton.render(5);
+
+	warningsButton.render(6);
+	tryCatchButton.render(7);
 
 	if (breakpointButton.active)
 	{
 		fill(255);
 		noStroke();
-		text("Break Point", 10, 110 + size * 3, leftBarWidth - 20);
-		textSize(20);
+		text("Break Point", 10, 130 + size * 4, leftBarWidth - 20);
+		textSize(16);
 		fill(200);
-		text("A wall that the errors cannot walk through.", 10, 145 + size * 3, leftBarWidth - 20);
+		text("A wall that the errors cannot walk through.", 10, 165 + size * 4, leftBarWidth - 20);
+		text("Cost: 5 kB.", 10, 210 + size * 4, leftBarWidth - 20);
 	}
+
+	textSize(32);
+	textAlign(LEFT);
+	fill(255);
+	noStroke();
+	text("Memory: " + money + "kB", leftBarWidth + 15, windowHeight - (bottomHeight - 30) / 2);
+	text("Stability: " + finish.health + "/100", leftBarWidth + 15 + ((windowWidth - leftBarWidth) / 3), windowHeight - (bottomHeight - 30) / 2);
+	text("Wave: " + wave, leftBarWidth + 15 + ((windowWidth - leftBarWidth) / 3) * 2, windowHeight - (bottomHeight - 30) / 2);
+
+	startGameButton.render(8);
 }
 
 function render()
@@ -509,5 +686,18 @@ function render()
 		spawners[i].render(true);
 	}
 
-	strokeWeight(1);
+	for (let i = 0; i < enemys.length; i++)
+	{
+		let val = enemys[i].update();
+		if (val != 0)
+		{
+			finish.health -= val;
+			enemys.splice(i, 1);
+			i--;
+		}
+		else
+		{
+			enemys[i].render();
+		}
+	}
 }
