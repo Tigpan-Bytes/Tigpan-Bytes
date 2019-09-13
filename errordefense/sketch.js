@@ -148,9 +148,10 @@ class TowerButton
 		this.x = x;
 		this.y = y;
 		this.size = size;
+		this.active = false;
 	}
 
-	render()
+	render(icon)
 	{
 		fill(15);
 		if (mouseX >= this.x && mouseY >= this.y && mouseX <= this.x + this.size && mouseY <= this.y + this.size)
@@ -160,10 +161,32 @@ class TowerButton
 		}
 		else
 		{
-			strokeWeight(1);
-			stroke(160,160,160);
+			if (this.active)
+			{
+				strokeWeight(2);
+				stroke(255,255,0);
+			}
+			else
+			{
+				strokeWeight(1);
+				stroke(160,160,160);
+			}
 		}
 		rect(this.x, this.y, this.size, this.size);
+
+		if (icon == 0) //breakpoint
+		{
+			fill(30, 60, 100);
+			stroke(60, 100, 130);
+			strokeWeight(1);
+
+			rect(this.x + 10, this.y + 10, this.size - 20, this.size - 20);
+		}
+	}
+
+	testClick()
+	{
+		return mouseX >= this.x && mouseY >= this.y && mouseX <= this.x + this.size && mouseY <= this.y + this.size;
 	}
 }
 
@@ -181,9 +204,9 @@ let cells;
 let finish;
 let spawners = new Array();
 
-let wallButton;
-let consoleLogButton;
 let breakpointButton;
+let consoleLogButton;
+let forumsButton;
 let testCaseButton;
 let warningsButton;
 let tryCatchButton;
@@ -215,10 +238,10 @@ function setup()
 
 	let size = leftBarWidth / 2 - 30;
 
-	wallButton = new TowerButton(20, 50, size);
+	breakpointButton = new TowerButton(20, 50, size);
 	consoleLogButton = new TowerButton(40 + size, 50, size);
 
-	breakpointButton = new TowerButton(20, 70 + size, size);
+	forumsButton = new TowerButton(20, 70 + size, size);
 	testCaseButton = new TowerButton(40 + size, 70 + size, size);
 
 	warningsButton = new TowerButton(20, 90 + size * 2, size);
@@ -351,17 +374,61 @@ function draw()
 
 function mousePressed()
 {
+	if (breakpointButton.testClick())
+	{
+		activateButton(breakpointButton);
+	}
+	if (consoleLogButton.testClick())
+	{
+		activateButton(consoleLogButton);
+	}
+	if (forumsButton.testClick())
+	{
+		activateButton(forumsButton);
+	}
+	if (testCaseButton.testClick())
+	{
+		activateButton(testCaseButton);
+	}
+	if (warningsButton.testClick())
+	{
+		activateButton(warningsButton);
+	}
+	if (tryCatchButton.testClick())
+	{
+		activateButton(tryCatchButton);
+	}
+
 	let x = floor((mouseX - 0.5 - leftBarWidth - colSpace) / pixelsPerCell);
 	let y = floor((mouseY - 0.5 - rowSpace) / pixelsPerCell);
 	let cell = getCell(x, y);
 	if (cell != null)
 	{
-		cell.walkable = !cell.walkable;
-		if (!redoPaths())
+		if (breakpointButton.active)
 		{
 			cell.walkable = !cell.walkable;
+			if (!redoPaths())
+			{
+				cell.walkable = !cell.walkable;
+			}
 		}
 	}
+}
+
+function activateButton(button)
+{
+	let bState = button.active;
+	
+	breakpointButton.active = false;
+	consoleLogButton.active = false;
+
+	forumsButton.active = false;
+	testCaseButton.active = false;
+
+	warningsButton.active = false;
+	tryCatchButton.active = false;
+
+	button.active = !bState;
 }
 
 function drawMenus()
@@ -373,7 +440,7 @@ function drawMenus()
 	rect(0, 0, leftBarWidth, windowHeight);
 	rect(leftBarWidth, windowHeight - bottomHeight, windowWidth - leftBarWidth, bottomHeight);
 
-	//Walls
+	//breakpoints
 	textSize(30);
 	textAlign(CENTER);
 	fill(255);
@@ -382,14 +449,24 @@ function drawMenus()
 
 	let size = leftBarWidth / 2 - 30;
 
-	wallButton.render();
+	breakpointButton.render(0);
 	consoleLogButton.render();
 
-	breakpointButton.render();
+	forumsButton.render();
 	testCaseButton.render();
 
 	warningsButton.render();
 	tryCatchButton.render();
+
+	if (breakpointButton.active)
+	{
+		fill(255);
+		noStroke();
+		text("Break Point", 10, 110 + size * 3, leftBarWidth - 20);
+		textSize(20);
+		fill(200);
+		text("A wall that the errors cannot walk through.", 10, 145 + size * 3, leftBarWidth - 20);
+	}
 }
 
 function render()
