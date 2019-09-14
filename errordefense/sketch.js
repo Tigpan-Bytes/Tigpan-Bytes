@@ -15,6 +15,8 @@ class Tile
 		this.walkable = walkable;
 		this.buildable = buildable;
 
+		this.tower = null;
+
 		this.north;
 		this.south;
 		this.east;
@@ -66,8 +68,19 @@ class Tile
 		this.west = w;
 	}
 
+	update()
+	{
+		if (this.tower != null)
+		{
+			this.tower.update();
+		}
+	}
+
 	render(force)
 	{
+		stroke(60, 100, 130);
+		strokeWeight(0.5);
+
 		if (this.walkable)
 		{
 			noFill();
@@ -78,6 +91,11 @@ class Tile
 		}
 
 		rect(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace, this.y * pixelsPerCell + 0.5 + rowSpace, pixelsPerCell - 1, pixelsPerCell - 1);
+
+		if (this.tower != null)
+		{
+			this.tower.render();
+		}
 	}
 }
 
@@ -300,14 +318,19 @@ class Enemy
 		this.cell = cell;
 		this.wave = wave;
 
-		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.04 : 0.015));
+		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.0325 : 0.015));
 		this.speed *= 1 + Math.sqrt((wave + 3) / 20);
 
 		this.x = cell.x;
 		this.y = cell.y;
 
 		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 5 : 100));
-		this.health *= 0.75 + Math.pow((wave / 2) + 2, 1.5);
+		this.health *= 0.25 + Math.pow((wave * 0.2) + 1, 1.5);
+	}
+
+	damage(dam)
+	{
+		this.health -= dam;
 	}
 
 	allowsChange()
@@ -315,8 +338,13 @@ class Enemy
 		return this.cell.psuedoNextOnPath != null;
 	}
 
-	update() // returns a number if it reaches the end
+	update() // returns a number if it reaches the end, or -1 if is dead
 	{
+		if (this.health <= 0)
+		{
+			return -1;
+		}
+
 		let xDisplace = Math.sign(this.cell.nextOnPath.x - this.x) * this.speed;
 		if (this.speed > abs(this.cell.nextOnPath.x - this.x))
 		{
@@ -389,6 +417,81 @@ class Enemy
 			ellipse(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
 				this.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2, pixelsPerCell / 1.3);
 		}
+	}
+}
+
+class Tower
+{
+	constructor(cell, cost)
+	{
+		this.cell = cell;
+		this.level = 0;
+		this.cost = cost;
+	}
+
+	distance(x, y)
+	{
+		let xDist = this.cell.x - x;
+		let yDist = this.cell.y - y;
+		return (xDist * xDist) + (yDist * yDist);
+	}
+}
+
+class ConsoleLog extends Tower
+{
+	constructor(cell)
+	{
+		super(cell, 25);
+
+		this.maxTimer = 40;
+		this.timer = this.maxTimer;
+		this.range = 6;
+		this.damage = 10;
+	}
+
+	update()
+	{
+		this.timer--;
+		if (this.timer <= 0)
+		{
+			this.timer = floor(random(0, 10));
+			let closestEnemy = null;
+			let greatestDistance = 5318008;
+			for (let i = 0; i < enemys.length; i++)
+			{
+				let distance = this.distance(enemys[i].x, enemys[i].y);
+				if (distance < this.range && enemys[i].cell.distance < greatestDistance)
+				{
+					greatestDistance = enemys[i].cell.distance;
+					closestEnemy = enemys[i];
+				}
+			}
+
+			if (closestEnemy != null)
+			{
+				this.timer = this.maxTimer;
+				stroke(255, 0, 0);
+				strokeWeight(3);
+
+				closestEnemy.damage(this.damage);
+
+				line(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
+					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
+					closestEnemy.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2,
+					closestEnemy.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2);
+			}
+		}
+	}
+
+	render()
+	{
+		fill(255);
+		stroke(50);
+		strokeWeight(2);
+
+		triangle(this.cell.x * pixelsPerCell + leftBarWidth + colSpace + pixelsPerCell / 2, this.cell.y * pixelsPerCell + rowSpace + 5,
+			this.cell.x * pixelsPerCell + leftBarWidth + colSpace + 5, this.cell.y * pixelsPerCell + rowSpace+ pixelsPerCell - 5,
+			this.cell.x * pixelsPerCell + leftBarWidth + colSpace + pixelsPerCell - 5, this.cell.y * pixelsPerCell + rowSpace + pixelsPerCell - 5);
 	}
 }
 
@@ -677,6 +780,11 @@ function mousePressed()
 				money -= 5;
 			}
 		}
+		if (consoleLogButton.active && money >= 25 && cell.buildable && cell.tower == null && !cell.walkable)
+		{
+			cell.tower = new ConsoleLog(cell);
+			money -= 25;
+		}
 	}
 }
 
@@ -798,16 +906,7 @@ function drawMenus()
 	warningsButton.render(6);
 	tryCatchButton.render(7);
 
-	if (breakpointButton.active)
-	{
-		fill(255);
-		noStroke();
-		text("Break Point", 10, 130 + size * 4, leftBarWidth - 20);
-		textSize(16);
-		fill(200);
-		text("A wall that the errors cannot walk through.", 10, 165 + size * 4, leftBarWidth - 20);
-		text("Cost: 5 kB.", 10, 210 + size * 4, leftBarWidth - 20);
-	}
+	drawTowerText(size * 4);
 
 	textSize(32);
 	textAlign(LEFT);
@@ -818,6 +917,35 @@ function drawMenus()
 	text("Wave: " + (wave == -1 ? 0 : wave), leftBarWidth + 15 + ((windowWidth - leftBarWidth) / 3) * 2, windowHeight - (bottomHeight - 30) / 2);
 
 	startGameButton.render(8);
+}
+
+function drawTowerText(size)
+{
+	if (breakpointButton.active)
+	{
+		fill(255);
+		noStroke();
+		text("Break Point", 10, 130 + size, leftBarWidth - 20);
+		textSize(16);
+		fill(200);
+		text("A wall that the errors cannot walk through.", 10, 165 + size, leftBarWidth - 20);
+		text("Cost: 5 kB.", 10, 210 + size, leftBarWidth - 20);
+	}
+	if (consoleLogButton.active)
+	{
+		fill(255);
+		noStroke();
+		text("Console Log", 10, 130 + size, leftBarWidth - 20);
+		textSize(16);
+		fill(200);
+		text("A standard tower that shoots the error closest to the end.", 10, 165 + size, leftBarWidth - 20);
+		text("Cost: 25 kB.", 10, 230 + size, leftBarWidth - 20);
+
+		fill(200,200,255);
+		text("Strong against Logic.", 10, 260 + size, leftBarWidth - 20);
+		fill(200,255,200);
+		text("Poor against Syntax.", 10, 280 + size, leftBarWidth - 20);
+	}
 }
 
 function render()
@@ -961,9 +1089,12 @@ function doGameLoop()
 		spawnWave();
 	}
 
-	for (let i = 0; i < spawners.length; i++)
+	for (let x = 0; x < cols; x++)
 	{
-		spawners[i].update();
+		for (let y = 0; y < rows; y++)
+		{
+			cells[x][y].update();
+		}
 	}
 
 	for (let i = 0; i < enemys.length; i++)
@@ -971,7 +1102,14 @@ function doGameLoop()
 		let val = enemys[i].update();
 		if (val != 0)
 		{
-			finish.health -= val;
+			if (val == -1)
+			{
+				money += 5;
+			}
+			else
+			{
+				finish.health -= val;
+			}
 			enemys.splice(i, 1);
 			i--;
 		}
