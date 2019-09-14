@@ -39,7 +39,6 @@ class Tile
 
 	nextPathGen(next)
 	{
-		//print(!this.foundPath() + " " + (next == null) + " " + next.foundPath());
 		if (!this.foundPath() || next == null || next.foundPath() || !next.walkable) {
 			return null;
 		}
@@ -126,6 +125,8 @@ class SpawnerTile extends Tile
 	{
 		super(x, y, walkable, buildable);
 		this.timeUntilActive = timeUntilActive;
+		this.enemys = new Array();
+		this.enemyTimer = 0;
 		//this.health = 100 + Math.pow(waveSpawned + 2, 1.5);
 	}
 
@@ -153,6 +154,36 @@ class SpawnerTile extends Tile
 				fill(255, 0, 0);
 				noStroke();
 				text(this.timeUntilActive, this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, this.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2 + 3);
+			}
+		}
+	}
+
+	update()
+	{
+		this.enemyTimer--;
+		if (this.enemyTimer <= 0 && this.enemys.length > 0)
+		{
+			let summonMod = (1 - (wave / 100));
+			if (summonMod < 0.25)
+			{
+				summonMod = 0.25;
+			}
+
+			let newEnemy = this.enemys.pop();
+			//add it to the global enemy array
+			enemys.push(newEnemy);
+
+			if (newEnemy.enemyType == EnemyType.Normal)
+			{
+				this.enemyTimer = 40 * summonMod + random(0, 3);
+			}
+			if (newEnemy.enemyType == EnemyType.Swarm)
+			{
+				this.enemyTimer = 15 * summonMod + random(0, 3);
+			}
+			if (newEnemy.enemyType == EnemyType.Tank)
+			{
+				this.enemyTimer = 130 * summonMod + random(0, 3);
 			}
 		}
 	}
@@ -270,7 +301,7 @@ class Enemy
 		this.wave = wave;
 
 		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.04 : 0.015));
-		this.speed *= 1 + (wave / 50);
+		this.speed *= 1 + Math.sqrt((wave + 3) / 20);
 
 		this.x = cell.x;
 		this.y = cell.y;
@@ -287,18 +318,24 @@ class Enemy
 	update() // returns a number if it reaches the end
 	{
 		let xDisplace = Math.sign(this.cell.nextOnPath.x - this.x) * this.speed;
-		if (abs(xDisplace) < abs(this.cell.nextOnPath.x - this.x) * this.speed)
+		if (this.speed > abs(this.cell.nextOnPath.x - this.x))
 		{
-			xDisplace = (this.cell.nextOnPath.x - this.x) * this.speed;
+			this.x = this.cell.nextOnPath.x;
 		}
-		this.x += xDisplace;
+		else
+		{
+			this.x += xDisplace;
+		}
 
 		let yDisplace = Math.sign(this.cell.nextOnPath.y - this.y) * this.speed;
-		if (abs(yDisplace) < abs(this.cell.nextOnPath.y - this.y) * this.speed)
+		if (this.speed > abs(this.cell.nextOnPath.y - this.y))
 		{
-			yDisplace = (this.cell.nextOnPath.y - this.y) * this.speed;
+			this.y = this.cell.nextOnPath.y;
 		}
-		this.y += yDisplace;
+		else
+		{
+			this.y += yDisplace;
+		}
 
 		if (Math.abs(this.x - this.cell.nextOnPath.x) <= this.speed * 1.5 && Math.abs(this.y - this.cell.nextOnPath.y) <= this.speed * 1.5)
 		{
@@ -307,7 +344,7 @@ class Enemy
 
 		if (this.cell == finish)
 		{
-			return (this.enemyType == EnemyType.Normal ? 5 : (this.enemyType == EnemyType.Swarm ? 1 : 20))
+			return (this.enemyType == EnemyType.Normal ? 5 : (this.enemyType == EnemyType.Swarm ? 2 : 15))
 		}
 		return 0;
 	}
@@ -438,10 +475,12 @@ function setup()
 	thisElement = floor(random(0,3));
 	thisType = 0;
 
-	nextElement = floor(random(0,3));
+	let e = floor(random(0, 3));
+	nextElement = ((e == thisElement) ? floor(random(0, 3)) : e);
 	nextType = 0;
 
-	nextNextElement = floor(random(0,3));
+	e = floor(random(0, 3));
+	nextNextElement = ((e == nextElement) ? floor(random(0, 3)) : e);
 	nextNextType = floor(random(0,3));
 
 	do
@@ -475,7 +514,7 @@ function setup()
 
 		for (let i = 0; i < 4; i++)
 		{
-			let newSpawn = new SpawnerTile(spawnLocations[i][0], spawnLocations[i][1], true, false, i * 2);
+			let newSpawn = new SpawnerTile(spawnLocations[i][0], spawnLocations[i][1], true, false, i * 3);
 			cells[spawnLocations[i][0]][spawnLocations[i][1]] = newSpawn;
 			spawners.push(newSpawn);
 		}
@@ -665,7 +704,55 @@ function previewNextWaves()
 	fill(30, 30, 30, 150);
 	stroke(90, 140, 170);
 	strokeWeight(2);
-	rect(windowWidth - 450, 40, 450, 160);
+	rect(windowWidth - 500, 40, 500, 130);
+
+	textAlign(LEFT);
+	noStroke();
+
+	text("wave[" + (wave + 1) + "].contents == (" + getTypePreview(thisType) + getElementPreview(thisElement), windowWidth - 490, 70);
+
+	text("wave[" + (wave + 2) + "].contents == (" + getTypePreview(nextType) + getElementPreview(nextElement), windowWidth - 490, 110);
+
+	text("wave[" + (wave + 3) + "].contents == (" + getTypePreview(nextNextType) + getElementPreview(nextNextElement), windowWidth - 490, 150);
+}
+
+function getTypePreview(type)
+{
+	if (type == EnemyType.Normal)
+	{
+		return "Normal "
+	}
+
+	if (type == EnemyType.Swarm)
+	{
+		return "A Swarm of "
+	}
+
+	if (type == EnemyType.Tank)
+	{
+		return "Massive "
+	}
+}
+
+function getElementPreview(element)
+{
+	if (element == Element.Syntax)
+	{
+		fill(190,255,190);
+		return "Syntax Errors);"
+	}
+
+	if (element == Element.Runtime)
+	{
+		fill(255,190,190);
+		return "Runtime Errors);"
+	}
+
+	if (element == Element.Logic)
+	{
+		fill(190,190,255);
+		return "Logic Errors);"
+	}
 }
 
 function drawMenus()
@@ -689,6 +776,7 @@ function drawMenus()
 	{
 		previewNextWaves();
 	}
+	textAlign(CENTER);
 
 	//left bar
 	textSize(30);
@@ -782,7 +870,69 @@ function spawnWave()
 	{
 		if (spawners[i].timeUntilActive <= 0)
 		{
-			enemys.push(new Enemy(thisElement, thisType, spawners[i], wave));
+			if (thisType == EnemyType.Normal)
+			{
+				let max = (Math.sqrt(wave + 6) * 1.25) - 0.5;
+				if (wave < 2)
+				{
+					max *= 2;
+				}
+				else if (wave < 5)
+				{
+					max *= 1.25;
+				}
+				else if (wave > 9)
+				{
+					max += random(0, 1);
+				}
+
+				for (let count = 0; count < max; count++)
+				{
+					spawners[i].enemys.push(new Enemy(thisElement, thisType, spawners[i], wave));
+				}
+			}
+			if (thisType == EnemyType.Swarm)
+			{
+				let max = (Math.sqrt(wave * 1.5 + 6) * 1.5);
+				if (wave < 2)
+				{
+					max *= 2;
+				}
+				else if (wave < 5)
+				{
+					max *= 1.25;
+				}
+				else if (wave > 9)
+				{
+					max += random(0, 2);
+				}
+
+				for (let count = 0; count < max; count++)
+				{
+					spawners[i].enemys.push(new Enemy(thisElement, thisType, spawners[i], wave));
+				}
+			}
+			if (thisType == EnemyType.Tank)
+			{
+				let max = (Math.sqrt(wave * 0.65 + 6) * 0.667) - 1;
+				if (wave < 2)
+				{
+					max *= 2;
+				}
+				else if (wave < 5)
+				{
+					max *= 1.25;
+				}
+				else if (wave > 9)
+				{
+					max += random(0, 0.5);
+				}
+
+				for (let count = 0; count < max; count++)
+				{
+					spawners[i].enemys.push(new Enemy(thisElement, thisType, spawners[i], wave));
+				}
+			}
 		}
 		else
 		{
@@ -796,8 +946,9 @@ function spawnWave()
 	nextElement = nextNextElement;
 	nextType = nextNextType;
 
-	nextNextElement = floor(random(0, 3));
-	nextNextType = floor(random(0, 3));
+	let e = floor(random(0, 3));
+	nextNextElement = (e == nextElement ? floor(random(0, 3)) : e);
+	nextNextType = ((wave % 3) == 0 ? 0 : floor(random(0, 3)));
 
 	framesUntilNextWave = 1100;
 	wave++;
@@ -805,9 +956,14 @@ function spawnWave()
 
 function doGameLoop()
 {
-	if (framesUntilNextWave == 0 || enemys.length == 0)
+	if ((framesUntilNextWave == 0 || enemys.length == 0) && spawners[0].enemys.length == 0 && spawners[1].enemys.length == 0 && spawners[2].enemys.length == 0 && spawners[3].enemys.length == 0)
 	{
 		spawnWave();
+	}
+
+	for (let i = 0; i < spawners.length; i++)
+	{
+		spawners[i].update();
 	}
 
 	for (let i = 0; i < enemys.length; i++)
