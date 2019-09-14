@@ -122,10 +122,10 @@ class FinishTile extends Tile
 
 class SpawnerTile extends Tile
 {
-	constructor(x, y, walkable, buildable, waveSpawned)
+	constructor(x, y, walkable, buildable, timeUntilActive)
 	{
 		super(x, y, walkable, buildable);
-		this.waveSpawned = waveSpawned;
+		this.timeUntilActive = timeUntilActive;
 		//this.health = 100 + Math.pow(waveSpawned + 2, 1.5);
 	}
 
@@ -133,10 +133,27 @@ class SpawnerTile extends Tile
 	{
 		if (force)
 		{
-			fill(random(50, 70), random(0, 25), random(0, 25));
-			stroke(255, 0, 0);
-
-			rect(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace, this.y * pixelsPerCell + 0.5 + rowSpace, pixelsPerCell - 1, pixelsPerCell - 1);
+			if (this.timeUntilActive <= 0)
+			{
+				fill(random(60, 80), random(0, 25), random(0, 25));
+				stroke(255, 0, 0);
+				strokeWeight(1);
+	
+				rect(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace, this.y * pixelsPerCell + 0.5 + rowSpace, pixelsPerCell - 1, pixelsPerCell - 1);
+			}
+			else
+			{
+				fill(20, 0, 0);
+				textAlign(CENTER);
+				textSize(14);
+				stroke(120, 0, 0);
+				strokeWeight(0.5);
+	
+				rect(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace, this.y * pixelsPerCell + 0.5 + rowSpace, pixelsPerCell - 1, pixelsPerCell - 1);
+				fill(255, 0, 0);
+				noStroke();
+				text(this.timeUntilActive, this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, this.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2 + 3);
+			}
 		}
 	}
 }
@@ -161,7 +178,7 @@ class TowerButton
 		}
 		else
 		{
-			if (this.active)
+			if (this.active && icon != 8) //dont highlight if play/pause button
 			{
 				strokeWeight(2);
 				stroke(255,255,0);
@@ -203,11 +220,25 @@ class TowerButton
 		}
 		if (icon == 8) //play
 		{
-			fill(90, 180, 90);
-			stroke(0, 255, 0);
-			strokeWeight(2);
+			if (!this.active)
+			{
+				fill(90, 180, 90);
+				stroke(0, 255, 0);
+				strokeWeight(2);
 
-			rect(this.x + 10, this.y + 10, this.size - 20, this.size - 20);
+				triangle(this.x - 10 + this.size, this.y + this.size / 2, 
+					this.x + 10, this.y - 10 + this.size, 
+					this.x + 10, this.y + 10);
+			}
+			else
+			{
+				fill(180, 130, 90);
+				stroke(255, 125, 0);
+				strokeWeight(2);
+
+				rect(this.x + 10, this.y + 10, this.size / 2 - 15, this.size - 20);
+				rect(this.x + this.size / 2 + 5, this.y + 10, this.size / 2 - 15, this.size - 20);
+			}
 		}
 	}
 
@@ -255,10 +286,21 @@ class Enemy
 
 	update() // returns a number if it reaches the end
 	{
-		this.x += Math.sign(this.cell.nextOnPath.x - this.x) * this.speed;
-		this.y += Math.sign(this.cell.nextOnPath.y - this.y) * this.speed;
+		let xDisplace = Math.sign(this.cell.nextOnPath.x - this.x) * this.speed;
+		if (abs(xDisplace) < abs(this.cell.nextOnPath.x - this.x) * this.speed)
+		{
+			xDisplace = (this.cell.nextOnPath.x - this.x) * this.speed;
+		}
+		this.x += xDisplace;
 
-		if (Math.abs(this.x - this.cell.nextOnPath.x) <= this.speed && Math.abs(this.y - this.cell.nextOnPath.y) <= this.speed)
+		let yDisplace = Math.sign(this.cell.nextOnPath.y - this.y) * this.speed;
+		if (abs(yDisplace) < abs(this.cell.nextOnPath.y - this.y) * this.speed)
+		{
+			yDisplace = (this.cell.nextOnPath.y - this.y) * this.speed;
+		}
+		this.y += yDisplace;
+
+		if (Math.abs(this.x - this.cell.nextOnPath.x) <= this.speed * 1.5 && Math.abs(this.y - this.cell.nextOnPath.y) <= this.speed * 1.5)
 		{
 			this.cell = this.cell.nextOnPath;
 		}
@@ -329,7 +371,7 @@ let spawners = new Array();
 let enemys = new Array();
 
 let money = 200;
-let wave = 0;
+let wave = -1;
 
 let deleteButton;
 let upgradeButton;
@@ -339,9 +381,18 @@ let forumsButton;
 let testCaseButton;
 let warningsButton;
 let tryCatchButton;
-let startGameButton;
+let startGameButton; // this . active stores the state of wether the game is paused or not
 
-let framesUntilNextWave;
+let framesUntilNextWave = 0;
+
+let thisElement;
+let thisType;
+
+let nextElement;
+let nextType;
+
+let nextNextElement;
+let nextNextType;
 
 function get2dArray(cols, rows)
 {
@@ -384,6 +435,15 @@ function setup()
 
 	startGameButton = new TowerButton(windowWidth - bottomHeight + 5, windowHeight - bottomHeight + 5, bottomHeight - 10);
 
+	thisElement = floor(random(0,3));
+	thisType = 0;
+
+	nextElement = floor(random(0,3));
+	nextType = 0;
+
+	nextNextElement = floor(random(0,3));
+	nextNextType = floor(random(0,3));
+
 	do
 	{
 		cells = get2dArray(cols, rows);
@@ -408,14 +468,14 @@ function setup()
 			cells[spawners[i].x][spawners[i].y] = new Tile(x, y, 0.1 < Math.random(), true);
 		}
 		spawners = new Array();
-		spawnLocations.push([floor(random(0, cols)), floor(random(0, rows * 0.3))]);
-		spawnLocations.push([floor(random(0, cols)), floor(random(rows * 0.7, rows))]);
-		spawnLocations.push([floor(random(0, cols * 0.3)), floor(random(0, rows))]);
-		spawnLocations.push([floor(random(cols * 0.7, cols)), floor(random(0, rows))]);
+		spawnLocations.push([floor(random(cols * 0.05, cols * 0.95)), floor(random(rows * 0.05, rows * 0.3))]);
+		spawnLocations.push([floor(random(cols * 0.05, cols * 0.95)), floor(random(rows * 0.7, rows * 0.95))]);
+		spawnLocations.push([floor(random(cols * 0.05, cols * 0.3)), floor(random(rows * 0.05, rows * 0.95))]);
+		spawnLocations.push([floor(random(cols * 0.7, cols * 0.95)), floor(random(rows * 0.05, rows * 0.95))]);
 
 		for (let i = 0; i < 4; i++)
 		{
-			let newSpawn = new SpawnerTile(spawnLocations[i][0], spawnLocations[i][1], true, false);
+			let newSpawn = new SpawnerTile(spawnLocations[i][0], spawnLocations[i][1], true, false, i * 2);
 			cells[spawnLocations[i][0]][spawnLocations[i][1]] = newSpawn;
 			spawners.push(newSpawn);
 		}
@@ -430,10 +490,6 @@ function setup()
 		}
 
 	} while (!redoPaths())
-
-	enemys.push(new Enemy(Element.Runtime, EnemyType.Normal, spawners[0], 1));
-	enemys.push(new Enemy(Element.Runtime, EnemyType.Swarm, spawners[1], 1));
-	enemys.push(new Enemy(Element.Runtime, EnemyType.Tank, spawners[2], 1));
 }
 
 function redoPaths() //returns true if you can't find a path from all the spawners
@@ -518,10 +574,20 @@ function getCell(x, y)
 function draw() 
 {
 	render();
+	
+	if (startGameButton.active)
+	{
+		doGameLoop();
+	}
 }
 
 function mousePressed()
 {
+	if (startGameButton.testClick())
+	{
+		startGameButton.active = !startGameButton.active;
+	}
+
 	if (deleteButton.testClick())
 	{
 		activateButton(deleteButton);
@@ -594,8 +660,19 @@ function activateButton(button)
 	button.active = !bState;
 }
 
+function previewNextWaves()
+{
+	fill(30, 30, 30, 150);
+	stroke(90, 140, 170);
+	strokeWeight(2);
+	rect(windowWidth - 450, 40, 450, 160);
+}
+
 function drawMenus()
 {
+	textSize(20);
+	textAlign(CENTER);
+
 	fill(30);
 	stroke(90, 140, 170);
 	strokeWeight(2);
@@ -603,9 +680,18 @@ function drawMenus()
 	rect(0, 0, leftBarWidth, windowHeight);
 	rect(leftBarWidth, windowHeight - bottomHeight, windowWidth - leftBarWidth, bottomHeight);
 
+	fill(30, 30, 30, 150);
+	rect(windowWidth - 150, 0, 150, 40);
+	fill(180);
+	noStroke();
+	text("View Waves", windowWidth - 150, 10, 150);
+	if (mouseX > windowWidth - 150 && mouseY < 40)
+	{
+		previewNextWaves();
+	}
+
 	//left bar
 	textSize(30);
-	textAlign(CENTER);
 	fill(255);
 	noStroke();
 	text("Towers", 10, 10, leftBarWidth - 20);
@@ -641,7 +727,7 @@ function drawMenus()
 	noStroke();
 	text("Memory: " + money + "kB", leftBarWidth + 15, windowHeight - (bottomHeight - 30) / 2);
 	text("Stability: " + finish.health + "/100", leftBarWidth + 15 + ((windowWidth - leftBarWidth) / 3), windowHeight - (bottomHeight - 30) / 2);
-	text("Wave: " + wave, leftBarWidth + 15 + ((windowWidth - leftBarWidth) / 3) * 2, windowHeight - (bottomHeight - 30) / 2);
+	text("Wave: " + (wave == -1 ? 0 : wave), leftBarWidth + 15 + ((windowWidth - leftBarWidth) / 3) * 2, windowHeight - (bottomHeight - 30) / 2);
 
 	startGameButton.render(8);
 }
@@ -650,8 +736,6 @@ function render()
 {
 	//makes the background black
 	background(0);
-
-	drawMenus();
 
 	noStroke();
 	fill(30,40,40);
@@ -679,11 +763,51 @@ function render()
 
 	finish.render(true);
 
-	strokeWeight(1);
-
 	for (let i = 0; i < spawners.length; i++)
 	{
 		spawners[i].render(true);
+	}
+
+	for (let i = 0; i < enemys.length; i++)
+	{
+		enemys[i].render();
+	}
+
+	drawMenus();
+}
+
+function spawnWave()
+{
+	for (let i = 0; i < spawners.length; i++)
+	{
+		if (spawners[i].timeUntilActive <= 0)
+		{
+			enemys.push(new Enemy(thisElement, thisType, spawners[i], wave));
+		}
+		else
+		{
+			spawners[i].timeUntilActive--;
+		}
+	}
+
+	thisElement = nextElement;
+	thisType = nextType;
+
+	nextElement = nextNextElement;
+	nextType = nextNextType;
+
+	nextNextElement = floor(random(0, 3));
+	nextNextType = floor(random(0, 3));
+
+	framesUntilNextWave = 1100;
+	wave++;
+}
+
+function doGameLoop()
+{
+	if (framesUntilNextWave == 0 || enemys.length == 0)
+	{
+		spawnWave();
 	}
 
 	for (let i = 0; i < enemys.length; i++)
@@ -695,9 +819,7 @@ function render()
 			enemys.splice(i, 1);
 			i--;
 		}
-		else
-		{
-			enemys[i].render();
-		}
 	}
+
+	framesUntilNextWave--;
 }
