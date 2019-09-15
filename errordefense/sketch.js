@@ -345,8 +345,9 @@ class Enemy
 		this.x = cell.x;
 		this.y = cell.y;
 
-		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 5 : 100));
-		this.health *= 0.25 + Math.pow((wave * 0.2) + 1, 1.5);
+		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 5 : 80));
+		this.health *= 0.25 + Math.pow((wave * 0.1) + 1, 1.5);
+		this.maxHealth = this.health;
 	}
 
 	damage(dam)
@@ -393,6 +394,8 @@ class Enemy
 
 		if (this.cell == finish)
 		{
+			//stops drones from continuing to latch
+			this.health = -1;
 			return (this.enemyType == EnemyType.Normal ? 5 : (this.enemyType == EnemyType.Swarm ? 2 : 15))
 		}
 		return 0;
@@ -437,6 +440,18 @@ class Enemy
 
 			ellipse(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
 				this.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2, pixelsPerCell / 1.3);
+
+			fill(50, 160, 50, 60);
+			stroke(0,255,0,90);
+			strokeWeight(2);
+			rect(this.x * pixelsPerCell + 2.5 + leftBarWidth + colSpace, this.y * pixelsPerCell + 2.5 + rowSpace - pixelsPerCell / 4, (pixelsPerCell - 4) * (this.health / this.maxHealth), pixelsPerCell / 4 - 4);
+		}
+		else
+		{
+			fill(50, 160, 50, 60);
+			stroke(0,255,0,90);
+			strokeWeight(2);
+			rect(this.x * pixelsPerCell + 2.5 + leftBarWidth + colSpace, this.y * pixelsPerCell + 2.5 + rowSpace - pixelsPerCell / 4, (pixelsPerCell - 4) * (this.health / this.maxHealth), pixelsPerCell / 4 - 4);
 		}
 	}
 }
@@ -466,7 +481,7 @@ class ConsoleLog extends Tower
 
 		this.maxTimer = 40;
 		this.timer = this.maxTimer;
-		this.range = 6;
+		this.range = 7;
 		this.damage = 10;
 	}
 
@@ -494,7 +509,7 @@ class ConsoleLog extends Tower
 				stroke(255, 0, 0);
 				strokeWeight(3);
 
-				closestEnemy.damage(closestEnemy.element == Element.Logic ? this.damage * 2 : (closestEnemy.element == Element.Syntax ? this.damage * 0.5 : this.damage));
+				closestEnemy.damage(closestEnemy.elementType == Element.Logic ? this.damage * 2 : (closestEnemy.elementType == Element.Syntax ? this.damage * 0.5 : this.damage));
 
 				line(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
 					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
@@ -525,8 +540,8 @@ class Documentation extends Tower
 		this.maxTimer = 40;
 		this.timer = this.maxTimer;
 		this.animationTimer = random(0, Math.PI * 2);
-		this.range = 4;
-		this.damage = 5;
+		this.range = 4.5;
+		this.damage = 4;
 
 		this.drones = new Array(3);
 		for (let i = 0; i < this.drones.length; i++)
@@ -585,10 +600,19 @@ class Documentation extends Tower
 			if (this.drones[i][1] <= 0 && this.drones[i][0] != undefined)
 			{
 				this.drones[i][1] = 50;
-				this.drones[i][0].damage(this.drones[i][0].element == Element.Syntax ? this.damage * 2 : (this.drones[i][0].element == Element.Runtime ? this.damage * 0.5 : this.damage));
+				this.drones[i][0].damage(this.drones[i][0].elementType == Element.Syntax ? this.damage * 2 : (this.drones[i][0].elementType == Element.Runtime ? this.damage * 0.5 : this.damage));
 				if (this.drones[i][0].health <= 0)
 				{
 					this.drones[i][0] = undefined;
+				}
+				else
+				{
+					stroke(255, 0, 255);
+					strokeWeight(3);
+					line(this.drones[i][0].x * pixelsPerCell + pixelsPerCell / 2 +  0.5 + leftBarWidth + colSpace - Math.sin(this.animationTimer + Math.PI * 2 * (i/3)) * pixelsPerCell, 
+						this.drones[i][0].y  * pixelsPerCell + pixelsPerCell / 2 + 0.5 + rowSpace + Math.cos(this.animationTimer + Math.PI * 2 * (i/3))* pixelsPerCell,
+						this.drones[i][0].x * pixelsPerCell + pixelsPerCell / 2 +  0.5 + leftBarWidth + colSpace, 
+						this.drones[i][0].y  * pixelsPerCell + pixelsPerCell / 2 + 0.5 + rowSpace);
 				}
 			}
 		}
@@ -650,12 +674,12 @@ let wave = -1;
 
 let deleteButton;
 let upgradeButton;
-let breakpointButton;
-let consoleLogButton;
-let documentationButton;
-let testCaseButton;
-let commentsButton;
-let tryCatchButton;
+let breakpointButton; // wall
+let consoleLogButton; // base shooting (LOGIC, syntax)
+let documentationButton; //drone latching (SYNTAX, runtime)
+let testCaseButton; // area of affect (NO BONUS)
+let commentsButton; // slows (NO BONUS)
+let tryCatchButton; // sniper (RUNTIME, logic)
 let startGameButton; // this . active stores the state of wether the game is paused or not
 
 let framesUntilNextWave = 0;
@@ -1071,18 +1095,18 @@ function drawTowerText(size)
 		showTowerTopText("Console.Log", "A standard tower that shoots the error closest to the end.", 25, 3, size);
 
 		fill(200,200,255);
-		text("Strong against Logic.", 10, 260 + size, leftBarWidth - 20);
+		text("200% against Logic.", 10, 260 + size, leftBarWidth - 20);
 		fill(130,205,130);
-		text("Poor against Syntax.", 10, 280 + size, leftBarWidth - 20);
+		text("50% against Syntax.", 10, 280 + size, leftBarWidth - 20);
 	}
 	if (documentationButton.active)
 	{
 		showTowerTopText("Documentation", "Latchs drones onto enemys until they die. Effective at the start of long paths.", 50, 4, size);
 
 		fill(200,255,200);
-		text("Strong against Syntax.", 10, 280 + size, leftBarWidth - 20);
+		text("200% against Syntax.", 10, 280 + size, leftBarWidth - 20);
 		fill(205,130,130);
-		text("Poor against Runtime.", 10, 300 + size, leftBarWidth - 20);
+		text("50% against Runtime.", 10, 300 + size, leftBarWidth - 20);
 	}
 }
 
