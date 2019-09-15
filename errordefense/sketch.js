@@ -267,6 +267,27 @@ class TowerButton
 
 			rect(this.x + 10, this.y + 10, this.size - 20, this.size - 20);
 		}
+		if (icon == 3) //console log
+		{
+			fill(255);
+			stroke(50);
+			strokeWeight(2);
+
+			triangle(this.x + this.size / 2, this.y + 10,
+				this.x + 10, this.y + this.size - 10,
+				this.x + this.size - 10, this.y + this.size - 10);
+		}
+		if (icon == 4) //documentation
+		{
+			fill(170, 20, 170);
+			stroke(100, 30, 100);
+			strokeWeight(2);
+
+			rect(this.x + 5, this.y + 5, this.size / 2 - 10, this.size / 2 - 10);
+			rect(this.x + 5 + this.size / 2 , this.y + 5, this.size / 2 - 10, this.size / 2 - 10);
+			rect(this.x + 5, this.y + 5 + this.size / 2 , this.size / 2 - 10, this.size / 2 - 10);
+			rect(this.x + 5 + this.size / 2 , this.y + 5 + this.size / 2 , this.size / 2 - 10, this.size / 2 - 10);
+		}
 		if (icon == 8) //play
 		{
 			if (!this.active)
@@ -473,7 +494,7 @@ class ConsoleLog extends Tower
 				stroke(255, 0, 0);
 				strokeWeight(3);
 
-				closestEnemy.damage(this.damage);
+				closestEnemy.damage(closestEnemy.element == Element.Logic ? this.damage * 2 : (closestEnemy.element == Element.Syntax ? this.damage * 0.5 : this.damage));
 
 				line(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
 					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
@@ -492,6 +513,120 @@ class ConsoleLog extends Tower
 		triangle(this.cell.x * pixelsPerCell + leftBarWidth + colSpace + pixelsPerCell / 2, this.cell.y * pixelsPerCell + rowSpace + 5,
 			this.cell.x * pixelsPerCell + leftBarWidth + colSpace + 5, this.cell.y * pixelsPerCell + rowSpace+ pixelsPerCell - 5,
 			this.cell.x * pixelsPerCell + leftBarWidth + colSpace + pixelsPerCell - 5, this.cell.y * pixelsPerCell + rowSpace + pixelsPerCell - 5);
+	}
+}
+
+class Documentation extends Tower
+{
+	constructor(cell)
+	{
+		super(cell, 75);
+
+		this.maxTimer = 40;
+		this.timer = this.maxTimer;
+		this.animationTimer = random(0, Math.PI * 2);
+		this.range = 4;
+		this.damage = 5;
+
+		this.drones = new Array(3);
+		for (let i = 0; i < this.drones.length; i++)
+		{	//                 target   timer
+			this.drones[i] = [undefined, 0];
+		}
+	}
+
+	update()
+	{
+		this.timer--;
+		this.animationTimer += 0.03;
+
+		let lowestDrone = 3;
+		if (this.drones[0][0] == undefined)
+		{
+			lowestDrone = 0;
+		}
+		else if (this.drones[1][0] == undefined)
+		{
+			lowestDrone = 1;
+		}
+		else if (this.drones[2][0] == undefined)
+		{
+			lowestDrone = 2;
+		}
+
+		if (this.timer <= 0 && lowestDrone < 3)
+		{
+			this.timer = floor(random(0, 10));
+			let closestEnemy = null;
+			let greatestDistance = 5318008;
+			for (let i = 0; i < enemys.length; i++)
+			{
+				let distance = this.distance(enemys[i].x, enemys[i].y);
+				if (distance < this.range && enemys[i].cell.distance < greatestDistance)
+				{
+					greatestDistance = enemys[i].cell.distance;
+					closestEnemy = enemys[i];
+				}
+			}
+
+			if (closestEnemy != null)
+			{
+				this.timer = this.maxTimer;
+
+				this.drones[lowestDrone][0] = closestEnemy;
+				//closestEnemy.damage(closestEnemy.element == Element.Syntax ? this.damage * 2 : (closestEnemy.element == Element.Runtime ? this.damage * 0.5 : this.damage));
+			}
+		}
+
+		for (let i = 0; i < this.drones.length; i++)
+		{	
+			this.drones[i][1]--;
+
+			if (this.drones[i][1] <= 0 && this.drones[i][0] != undefined)
+			{
+				this.drones[i][1] = 50;
+				this.drones[i][0].damage(this.drones[i][0].element == Element.Syntax ? this.damage * 2 : (this.drones[i][0].element == Element.Runtime ? this.damage * 0.5 : this.damage));
+				if (this.drones[i][0].health <= 0)
+				{
+					this.drones[i][0] = undefined;
+				}
+			}
+		}
+
+	}
+
+	render()
+	{
+		fill(170, 20, 170);
+		stroke(100, 30, 100);
+		strokeWeight(2);
+
+		let xPlus = 0.5 + leftBarWidth + colSpace;
+		let yPlus = 0.5 + rowSpace;
+		let rectSize = pixelsPerCell / 2 - 4;
+
+		rect(this.cell.x * pixelsPerCell + xPlus + 2, this.cell.y * pixelsPerCell + yPlus + 2, rectSize, rectSize);
+		rect(this.cell.x * pixelsPerCell + xPlus + 2 + pixelsPerCell / 2, this.cell.y * pixelsPerCell + yPlus + 2, rectSize, rectSize);
+		rect(this.cell.x * pixelsPerCell + xPlus + 2, this.cell.y * pixelsPerCell + yPlus + 2 + pixelsPerCell / 2, rectSize, rectSize);
+		rect(this.cell.x * pixelsPerCell + xPlus + 2 + pixelsPerCell / 2, this.cell.y * pixelsPerCell + yPlus + 2 + pixelsPerCell / 2, rectSize, rectSize);
+
+		fill(255, 100, 255);
+		stroke(140, 90, 140);
+		strokeWeight(1);
+		for (let i = 0; i < this.drones.length; i++)
+		{
+			print(this.drones[i][0]);
+			if (this.drones[i][0] == undefined)
+			{
+				ellipse(this.cell.x * pixelsPerCell + pixelsPerCell / 2 + xPlus - Math.sin(this.animationTimer + Math.PI * 2 * (i/3)) * pixelsPerCell, 
+					this.cell.y * pixelsPerCell + pixelsPerCell / 2 +yPlus + Math.cos(this.animationTimer + Math.PI * 2 * (i/3))* pixelsPerCell, 10);
+			}
+			else
+			{
+				ellipse(this.drones[i][0].x * pixelsPerCell + pixelsPerCell / 2 + xPlus - Math.sin(this.animationTimer + Math.PI * 2 * (i/3)) * pixelsPerCell, 
+					this.drones[i][0].y * pixelsPerCell + pixelsPerCell / 2 +yPlus + Math.cos(this.animationTimer + Math.PI * 2 * (i/3))* pixelsPerCell, 10);
+			}
+		}
 	}
 }
 
@@ -517,9 +652,9 @@ let deleteButton;
 let upgradeButton;
 let breakpointButton;
 let consoleLogButton;
-let forumsButton;
+let documentationButton;
 let testCaseButton;
-let warningsButton;
+let commentsButton;
 let tryCatchButton;
 let startGameButton; // this . active stores the state of wether the game is paused or not
 
@@ -567,10 +702,10 @@ function setup()
 	breakpointButton = new TowerButton(20, 70 + size, size);
 	consoleLogButton = new TowerButton(40 + size, 70 + size, size);
 
-	forumsButton = new TowerButton(20, 90 + size * 2, size);
+	documentationButton = new TowerButton(20, 90 + size * 2, size);
 	testCaseButton = new TowerButton(40 + size, 90 + size * 2, size);
 
-	warningsButton = new TowerButton(20, 110 + size * 3, size);
+	commentsButton = new TowerButton(20, 110 + size * 3, size);
 	tryCatchButton = new TowerButton(40 + size, 110 + size * 3, size);
 
 	startGameButton = new TowerButton(windowWidth - bottomHeight + 5, windowHeight - bottomHeight + 5, bottomHeight - 10);
@@ -746,17 +881,17 @@ function mousePressed()
 	{
 		activateButton(consoleLogButton);
 	}
-	if (forumsButton.testClick())
+	if (documentationButton.testClick())
 	{
-		activateButton(forumsButton);
+		activateButton(documentationButton);
 	}
 	if (testCaseButton.testClick())
 	{
 		activateButton(testCaseButton);
 	}
-	if (warningsButton.testClick())
+	if (commentsButton.testClick())
 	{
-		activateButton(warningsButton);
+		activateButton(commentsButton);
 	}
 	if (tryCatchButton.testClick())
 	{
@@ -785,6 +920,11 @@ function mousePressed()
 			cell.tower = new ConsoleLog(cell);
 			money -= 25;
 		}
+		if (documentationButton.active && money >= 50 && cell.buildable && cell.tower == null && !cell.walkable)
+		{
+			cell.tower = new Documentation(cell);
+			money -= 50;
+		}
 	}
 }
 
@@ -798,10 +938,10 @@ function activateButton(button)
 	breakpointButton.active = false;
 	consoleLogButton.active = false;
 
-	forumsButton.active = false;
+	documentationButton.active = false;
 	testCaseButton.active = false;
 
-	warningsButton.active = false;
+	commentsButton.active = false;
 	tryCatchButton.active = false;
 
 	button.active = !bState;
@@ -890,7 +1030,7 @@ function drawMenus()
 	textSize(30);
 	fill(255);
 	noStroke();
-	text("Towers", 10, 10, leftBarWidth - 20);
+	text("Debuggers", 10, 10, leftBarWidth - 20);
 
 	let size = leftBarWidth / 2 - 30;
 
@@ -900,12 +1040,13 @@ function drawMenus()
 	breakpointButton.render(2);
 	consoleLogButton.render(3);
 
-	forumsButton.render(4);
+	documentationButton.render(4);
 	testCaseButton.render(5);
 
-	warningsButton.render(6);
+	commentsButton.render(6);
 	tryCatchButton.render(7);
 
+	textSize(26);
 	drawTowerText(size * 4);
 
 	textSize(32);
@@ -923,29 +1064,37 @@ function drawTowerText(size)
 {
 	if (breakpointButton.active)
 	{
-		fill(255);
-		noStroke();
-		text("Break Point", 10, 130 + size, leftBarWidth - 20);
-		textSize(16);
-		fill(200);
-		text("A wall that the errors cannot walk through.", 10, 165 + size, leftBarWidth - 20);
-		text("Cost: 5 kB.", 10, 210 + size, leftBarWidth - 20);
+		showTowerTopText("Break Point", "A wall that the errors cannot walk through. Debuggers must be placed on these.", 5, 4, size);
 	}
 	if (consoleLogButton.active)
 	{
-		fill(255);
-		noStroke();
-		text("Console Log", 10, 130 + size, leftBarWidth - 20);
-		textSize(16);
-		fill(200);
-		text("A standard tower that shoots the error closest to the end.", 10, 165 + size, leftBarWidth - 20);
-		text("Cost: 25 kB.", 10, 230 + size, leftBarWidth - 20);
+		showTowerTopText("Console.Log", "A standard tower that shoots the error closest to the end.", 25, 3, size);
 
 		fill(200,200,255);
 		text("Strong against Logic.", 10, 260 + size, leftBarWidth - 20);
-		fill(200,255,200);
+		fill(130,205,130);
 		text("Poor against Syntax.", 10, 280 + size, leftBarWidth - 20);
 	}
+	if (documentationButton.active)
+	{
+		showTowerTopText("Documentation", "Latchs drones onto enemys until they die. Effective at the start of long paths.", 50, 4, size);
+
+		fill(200,255,200);
+		text("Strong against Syntax.", 10, 280 + size, leftBarWidth - 20);
+		fill(205,130,130);
+		text("Poor against Runtime.", 10, 300 + size, leftBarWidth - 20);
+	}
+}
+
+function showTowerTopText(title, desc, amount, descLines, size)
+{
+	fill(255);
+	noStroke();
+	text(title, 13, 130 + size, leftBarWidth - 20);
+	textSize(16);
+	fill(200);
+	text(desc, 13, 165 + size, leftBarWidth - 20);
+	text("Cost: " + amount + " kB.", 13, 170 + size + descLines * 20, leftBarWidth - 20);
 }
 
 function render()
