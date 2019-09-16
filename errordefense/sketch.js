@@ -5,7 +5,10 @@
 // Extra for Experts:
 // - 1800+ lines
 // - Polymorphism
-// - Polymorphism
+// - Tons of arrays
+// - 1800+ lines
+// - Reactive Pathfinding
+// - Did I mention 1800+ lines?
 
 class Tile
 {
