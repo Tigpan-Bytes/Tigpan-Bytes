@@ -363,6 +363,7 @@ class TowerButton
 
 	testClick()
 	{
+
 		return mouseX >= this.x && mouseY >= this.y && mouseX <= this.x + this.size && mouseY <= this.y + this.size;
 	}
 }
@@ -854,7 +855,7 @@ class TestCase extends Tower
 	{
 		super(cell, 50);
 
-		this.maxTimer = 160;
+		this.maxTimer = 130;
 		this.range = testCaseRange;
 		this.damage = 11;
 		this.firedTime = 0;
@@ -1052,6 +1053,9 @@ let nextNextElement;
 let nextNextType;
 
 let isOnTitleScreen = true;
+
+let failText = "";
+let failTimer = 0;
 
 function get2dArray(cols, rows)
 {
@@ -1260,108 +1264,181 @@ function draw()
 
 function mousePressed()
 {
-	if (startGameButton.testClick())
+	if (!isOnTitleScreen)
 	{
-		startGameButton.active = !startGameButton.active;
-	}
-
-	if (deleteButton.testClick())
-	{
-		activateButton(deleteButton);
-	}
-	if (upgradeButton.testClick())
-	{
-		activateButton(upgradeButton);
-	}
-	if (breakpointButton.testClick())
-	{
-		activateButton(breakpointButton);
-	}
-	if (consoleLogButton.testClick())
-	{
-		activateButton(consoleLogButton);
-	}
-	if (documentationButton.testClick())
-	{
-		activateButton(documentationButton);
-	}
-	if (tryCatchButton.testClick())
-	{
-		activateButton(tryCatchButton);
-	}
-	if (testCaseButton.testClick())
-	{
-		activateButton(testCaseButton);
-	}
-	if (commentsButton.testClick())
-	{
-		activateButton(commentsButton);
-	}
-
-	let x = floor((mouseX - 0.5 - leftBarWidth - colSpace) / pixelsPerCell);
-	let y = floor((mouseY - 0.5 - rowSpace) / pixelsPerCell);
-	let cell = getCell(x, y);
-	if (cell != null)
-	{
-		if (deleteButton.active)
+		if (startGameButton.testClick())
 		{
-			if (cell.tower != null)
-			{
-				money += floor(cell.tower.cost * 0.75);
-				cell.tower = null;
-			}
-			else if (cell.tower == null && money >= 10 && !cell.walkable && cell.buildable)
-			{
-				cell.walkable = true;
-				money -= 10;
-				redoPaths();
-			}
-		}
-		if (upgradeButton.active && cell.tower != null)
-		{
-			if (money >= cell.tower.upgradeCost)
-			{
-				money -= cell.tower.upgradeCost;
-				cell.tower.upgrade();
-			}
+			startGameButton.active = !startGameButton.active;
 		}
 
-		if (breakpointButton.active && money >= 5 && cell.walkable && cell.buildable)
+		if (deleteButton.testClick())
 		{
-			cell.walkable = !cell.walkable;
-			if (!redoPaths())
+			activateButton(deleteButton);
+		}
+		if (upgradeButton.testClick())
+		{
+			activateButton(upgradeButton);
+		}
+		if (breakpointButton.testClick())
+		{
+			activateButton(breakpointButton);
+		}
+		if (consoleLogButton.testClick())
+		{
+			activateButton(consoleLogButton);
+		}
+		if (documentationButton.testClick())
+		{
+			activateButton(documentationButton);
+		}
+		if (tryCatchButton.testClick())
+		{
+			activateButton(tryCatchButton);
+		}
+		if (testCaseButton.testClick())
+		{
+			activateButton(testCaseButton);
+		}
+		if (commentsButton.testClick())
+		{
+			activateButton(commentsButton);
+		}
+
+		let x = floor((mouseX - 0.5 - leftBarWidth - colSpace) / pixelsPerCell);
+		let y = floor((mouseY - 0.5 - rowSpace) / pixelsPerCell);
+		let cell = getCell(x, y);
+		if (cell != null)
+		{
+			if (deleteButton.active)
 			{
-				cell.walkable = !cell.walkable;
+				if (cell.tower != null)
+				{
+					money += floor(cell.tower.cost * 0.75);
+					cell.tower = null;
+				}
+				else if (cell.tower == null && !cell.walkable && cell.buildable)
+				{
+					if (money >= 10)
+					{
+						cell.walkable = true;
+						money -= 10;
+						redoPaths();
+					}
+					else
+					{
+						failText = "Not enough memory. Costs 10 kB to remove a breakpoint.";
+						failTimer = 120;
+					}
+				}
+			}
+			else if (upgradeButton.active && cell.tower != null)
+			{
+				if (money >= cell.tower.upgradeCost)
+				{
+					money -= cell.tower.upgradeCost;
+					cell.tower.upgrade();
+				}
+				else
+				{
+					failText = "Not enough memory.";
+					failTimer = 120;
+				}
+			}
+			else if (breakpointButton.active && cell.walkable && cell.buildable)
+			{
+				if (money >= 5)
+				{
+					cell.walkable = !cell.walkable;
+					if (!redoPaths())
+					{
+						cell.walkable = !cell.walkable;
+						failText = "Can't block the errors.";
+						failTimer = 120;
+					}
+					else
+					{
+						money -= 5;
+					}
+				}
+				else
+				{
+					failText = "Not enough memory.";
+					failTimer = 120;
+				}
+			}
+			else if (cell.buildable && cell.tower == null && !cell.walkable)
+			{
+				if (consoleLogButton.active)
+				{
+					if (money >= 25)
+					{
+						cell.tower = new ConsoleLog(cell);
+						money -= 25;
+					}
+					else
+					{
+						failText = "Not enough memory.";
+						failTimer = 120;
+					}
+				}
+				if (documentationButton.active)
+				{
+					if (money >= 50)
+					{
+						cell.tower = new Documentation(cell);
+						money -= 50;
+					}
+					else
+					{
+						failText = "Not enough memory."
+						failTimer = 120;
+					}
+				}
+				if (tryCatchButton.active)
+				{
+					if (money >= 60)
+					{
+						cell.tower = new TryCatch(cell);
+						money -= 60;
+					}
+					else
+					{
+						failText = "Not enough memory."
+						failTimer = 120;
+					}
+				}
+				if (testCaseButton.active)
+				{
+					if (money >= 50)
+					{
+						cell.tower = new TestCase(cell);
+						money -= 50;
+					}
+					else
+					{
+						failText = "Not enough memory."
+						failTimer = 120;
+					}
+				}
+				if (commentsButton.active)
+				{
+					if (money >= 80)
+					{
+						cell.tower = new Comments(cell);
+						money -= 80;
+					}
+					else
+					{
+						failText = "Not enough memory."
+						failTimer = 120;
+					}
+				}
 			}
 			else
 			{
-				money -= 5;
+				failText = "Can only build on an empty breakpoint.";
+				failTimer = 120;
 			}
-		}
-		if (consoleLogButton.active && money >= 25 && cell.buildable && cell.tower == null && !cell.walkable)
-		{
-			cell.tower = new ConsoleLog(cell);
-			money -= 25;
-		}
-		if (documentationButton.active && money >= 50 && cell.buildable && cell.tower == null && !cell.walkable)
-		{
-			cell.tower = new Documentation(cell);
-			money -= 50;
-		}
-		if (tryCatchButton.active && money >= 60 && cell.buildable && cell.tower == null && !cell.walkable)
-		{
-			cell.tower = new TryCatch(cell);
-			money -= 60;
-		}
-		if (testCaseButton.active && money >= 50 && cell.buildable && cell.tower == null && !cell.walkable)
-		{
-			cell.tower = new TestCase(cell);
-			money -= 50;
-		}
-		if (commentsButton.active && money >= 80 && cell.buildable && cell.tower == null && !cell.walkable)
-		{
-			cell.tower = new Comments(cell);
-			money -= 80;
 		}
 	}
 }
@@ -1617,6 +1694,19 @@ function render()
 	drawMenus();
 
 	drawRangeDisplay();
+
+	if (failTimer > 0)
+	{
+		textSize(24);
+		textAlign(LEFT);
+		fill(255, 0, 0);
+		stroke(0);
+		strokeWeight(4);
+
+		print(failText);
+		text(failText, mouseX, mouseY - 15);
+		failTimer--;
+	}
 }
 
 function spawnWave()
