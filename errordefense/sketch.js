@@ -1703,7 +1703,6 @@ function render()
 		stroke(0);
 		strokeWeight(4);
 
-		print(failText);
 		text(failText, mouseX, mouseY - 15);
 		failTimer--;
 	}
