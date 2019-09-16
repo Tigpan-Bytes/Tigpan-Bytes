@@ -1260,6 +1260,11 @@ function draw()
 		{
 			doGameLoop();
 		}
+
+		if (keyIsDown(27)) //escape
+		{
+			isOnTitleScreen = true;
+		}
 	}
 }
 
@@ -1959,6 +1964,9 @@ function doTitleScreen()
 	text("Survive as many waves of errors as possible.", windowWidth / 2, 210);
 	text("Gain memory for killing errors so you can place more debuggers.", windowWidth / 2, 240);
 	text("Some debuggers have strengths and weaknesses to different enemys. Mix and match for the best result.", windowWidth / 2, 270);
+
+	textSize(22);
+	text("Press ESC to return to the main menu.", windowWidth / 2, windowHeight / 2 + 90);
 
 	textSize(40);
 	text("Highest wave this session: " + biggestWave, windowWidth / 2, windowHeight - 20);
