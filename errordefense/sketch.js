@@ -398,7 +398,7 @@ class Enemy
 		this.y = cell.y;
 
 		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 7 : 100));
-		this.health *= 0.1 + Math.pow((wave * 0.175) + 1, 1.5);
+		this.health *= 0.1 + Math.pow((wave * 0.2) + 1, 1.55);
 		this.maxHealth = this.health;
 	}
 
@@ -1737,7 +1737,7 @@ function spawnWave()
 			}
 			if (thisType == EnemyType.Swarm)
 			{
-				let max = (Math.sqrt(wave * 1.5 + 6) * 1.5);
+				let max = (Math.sqrt(wave * 1.6 + 6) * 1.6);
 				if (wave < 2)
 				{
 					max *= 2;
@@ -1790,9 +1790,21 @@ function spawnWave()
 	nextElement = nextNextElement;
 	nextType = nextNextType;
 
+	//picks next wave based on current wave and previous wave
 	let e = floor(random(0, 3));
 	nextNextElement = (e == nextElement ? floor(random(0, 3)) : e);
-	nextNextType = ((wave % 3) == 0 ? 0 : floor(random(0, 3)));
+	if ((wave % 10) == 5)
+	{
+		nextNextType = EnemyType.Swarm;
+	}
+	else if ((wave % 10) == 0)
+	{
+		nextNextType = EnemyType.Tank;
+	}
+	else
+	{
+		nextNextType = ((wave % 3) == 0 ? EnemyType.Normal : floor(random(0, 3)));
+	}
 
 	framesUntilNextWave = 1100;
 	wave++;
@@ -1826,15 +1838,15 @@ function doGameLoop()
 			{
 				if (enemys[i].enemyType == EnemyType.Normal)
 				{
-					money += floor(5 * (wave / 14 + 1));
+					money += floor(5 * (wave / 18 + 1.2));
 				}
 				else if (enemys[i].enemyType == EnemyType.Swarm)
 				{
-					money += floor(wave / 14 + 1);
+					money += floor(wave / 18 + 1.2);
 				}
 				else if (enemys[i].enemyType == EnemyType.Tank)
 				{
-					money += floor(17 * (wave / 14 + 1));
+					money += floor(17 * (wave / 18 + 1.2));
 				}
 			}
 			else
