@@ -1,10 +1,11 @@
-// Game of Life
+// Error Defense
 // Timothy Letkeman
 // Thursday 12th September, 2019
 //
 // Extra for Experts:
-// - Loops around screen
-// - Gui for editing rules
+// - 1800+ lines
+// - Polymorphism
+// - Polymorphism
 
 class Tile
 {
@@ -832,9 +833,9 @@ class TestCase extends Tower
 	{
 		super(cell, 40);
 
-		this.maxTimer = 140;
+		this.maxTimer = 160;
 		this.range = testCaseRange;
-		this.damage = 12;
+		this.damage = 11;
 
 		this.yHeight = Math.sqrt(3) * (pixelsPerCell - 4) / 4;
 		this.xWidth = (pixelsPerCell - 4) / 4;
@@ -845,7 +846,7 @@ class TestCase extends Tower
 		this.increaseUpgradeCost();
 		this.damage *= 1.75;
 		this.range += 0.15;
-		this.maxTimer -= (this.maxTimer - 110) * 0.2;
+		this.maxTimer -= (this.maxTimer - 120) * 0.2;
 	}
 
 	update()
@@ -878,7 +879,7 @@ class TestCase extends Tower
 
 				ellipse(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
 					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
-					pixelsPerCell * this.range);
+					pixelsPerCell * this.range * 2);
 			}
 		}
 	}
@@ -956,7 +957,7 @@ class Comments extends Tower
 
 				ellipse(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
 					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
-					pixelsPerCell * this.range);
+					pixelsPerCell * this.range * 2);
 			}
 		}
 	}
