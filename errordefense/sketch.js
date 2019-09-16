@@ -76,7 +76,7 @@ class Tile
 		}
 	}
 
-	render(force)
+	render(force) // returns a tower to be added to the tower render queue
 	{
 		stroke(60, 100, 130);
 		strokeWeight(0.5);
@@ -94,7 +94,7 @@ class Tile
 
 		if (this.tower != null)
 		{
-			this.tower.render();
+			return this.tower;
 		}
 	}
 }
@@ -288,6 +288,51 @@ class TowerButton
 			rect(this.x + 5, this.y + 5 + this.size / 2 , this.size / 2 - 10, this.size / 2 - 10);
 			rect(this.x + 5 + this.size / 2 , this.y + 5 + this.size / 2 , this.size / 2 - 10, this.size / 2 - 10);
 		}
+		if (icon == 5) //try catch
+		{
+			fill(60, 200, 200);
+			stroke(100, 255, 255);
+			strokeWeight(2);
+
+			beginShape();
+			vertex(this.x + this.size / 2, this.y + 5);
+			vertex(this.x + (this.size / 5) * 3, this.y + (this.size / 5) * 2);
+			vertex(this.x + this.size - 5, this.y + this.size / 2);
+			vertex(this.x + (this.size / 5) * 3, this.y + (this.size / 5) * 3);
+			vertex(this.x + this.size / 2, this.y + this.size - 5);
+			vertex(this.x + (this.size / 5) * 2, this.y + (this.size / 5) * 3);
+			vertex(this.x + 5, this.y + this.size / 2);
+			vertex(this.x + (this.size / 5) * 2, this.y + (this.size / 5) * 2);
+			endShape(CLOSE);
+		}
+		if (icon == 6) //test case
+		{
+			fill(235, 160, 100);
+			stroke(255, 200, 0);
+			strokeWeight(2);
+
+			let yHeight = Math.sqrt(3) * (this.size - 10) / 4;
+			let xWidth = (this.size - 10) / 4;
+
+			beginShape();
+			vertex(this.x + 5, this.y + this.size / 2);
+			vertex(this.x + this.size / 2 - xWidth, this.y + this.size / 2 + yHeight);
+			vertex(this.x + this.size / 2 + xWidth, this.y + this.size / 2 + yHeight);
+			vertex(this.x + this.size - 5, this.y + this.size / 2);
+			vertex(this.x + this.size / 2 + xWidth, this.y + this.size / 2 - yHeight);
+			vertex(this.x + this.size / 2 - xWidth, this.y + this.size / 2 - yHeight);
+			endShape(CLOSE);
+		}
+		if (icon == 7) //comment
+		{
+			stroke(160, 255, 80);
+			strokeWeight(7);
+
+			line(this.x + 7, this.y + this.size - 7, 
+				this.x + this.size / 2, this.y + 7);
+			line(this.x + this.size / 2, this.y + this.size - 7, 
+				this.x + this.size - 7, this.y + 7);
+		}
 		if (icon == 8) //play
 		{
 			if (!this.active)
@@ -341,12 +386,14 @@ class Enemy
 
 		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.0325 : 0.015));
 		this.speed *= 1 + Math.sqrt((wave + 3) / 20);
+		this.slow = 1;
+		this.slowTimer = 0;
 
 		this.x = cell.x;
 		this.y = cell.y;
 
-		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 5 : 80));
-		this.health *= 0.25 + Math.pow((wave * 0.1) + 1, 1.5);
+		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 5 : 90));
+		this.health *= 0.25 + Math.pow((wave * 0.15) + 1, 1.4);
 		this.maxHealth = this.health;
 	}
 
@@ -362,13 +409,19 @@ class Enemy
 
 	update() // returns a number if it reaches the end, or -1 if is dead
 	{
+		this.slowTimer--;
+		if (this.slowTimer <= 0)
+		{
+			this.slow = 1;
+		}
+
 		if (this.health <= 0)
 		{
 			return -1;
 		}
 
-		let xDisplace = Math.sign(this.cell.nextOnPath.x - this.x) * this.speed;
-		if (this.speed > abs(this.cell.nextOnPath.x - this.x))
+		let xDisplace = Math.sign(this.cell.nextOnPath.x - this.x) * this.speed * this.slow;
+		if (this.speed * this.slow > abs(this.cell.nextOnPath.x - this.x))
 		{
 			this.x = this.cell.nextOnPath.x;
 		}
@@ -377,8 +430,8 @@ class Enemy
 			this.x += xDisplace;
 		}
 
-		let yDisplace = Math.sign(this.cell.nextOnPath.y - this.y) * this.speed;
-		if (this.speed > abs(this.cell.nextOnPath.y - this.y))
+		let yDisplace = Math.sign(this.cell.nextOnPath.y - this.y) * this.speed * this.slow;
+		if (this.speed * this.slow > abs(this.cell.nextOnPath.y - this.y))
 		{
 			this.y = this.cell.nextOnPath.y;
 		}
@@ -387,7 +440,7 @@ class Enemy
 			this.y += yDisplace;
 		}
 
-		if (Math.abs(this.x - this.cell.nextOnPath.x) <= this.speed * 1.5 && Math.abs(this.y - this.cell.nextOnPath.y) <= this.speed * 1.5)
+		if (Math.abs(this.x - this.cell.nextOnPath.x) <= this.speed * this.slow * 1.5 && Math.abs(this.y - this.cell.nextOnPath.y) <= this.speed * this.slow * 1.5)
 		{
 			this.cell = this.cell.nextOnPath;
 		}
@@ -462,16 +515,40 @@ class Tower
 	{
 		this.cell = cell;
 		this.level = 0;
+		this.timer = 0;
 		this.cost = cost;
+		this.upgradeCost = cost * 2;
+
+		this.xPlus = this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace;
+		this.yPlus = this.cell.y * pixelsPerCell + 0.5 + rowSpace;
+	}
+
+	increaseUpgradeCost()
+	{
+		this.level++;
+		this.upgradeCost = this.upgradeCost * 2;
 	}
 
 	distance(x, y)
 	{
 		let xDist = this.cell.x - x;
 		let yDist = this.cell.y - y;
-		return (xDist * xDist) + (yDist * yDist);
+		return Math.sqrt((xDist * xDist) + (yDist * yDist));
+	}
+
+	render()
+	{
+		textAlign(LEFT, TOP);
+		textSize(10);
+		fill(255);
+		stroke(0);
+		strokeWeight(2);
+		
+		text(this.level, this.xPlus + 2, this.yPlus + 2);
 	}
 }
+
+const consoleLogRange = 3.5;
 
 class ConsoleLog extends Tower
 {
@@ -480,9 +557,16 @@ class ConsoleLog extends Tower
 		super(cell, 25);
 
 		this.maxTimer = 40;
-		this.timer = this.maxTimer;
-		this.range = 7;
+		this.range = consoleLogRange;
 		this.damage = 10;
+	}
+
+	upgrade()
+	{
+		this.increaseUpgradeCost();
+		this.damage *= 1.75;
+		this.range += 0.35;
+		this.maxTimer -= (this.maxTimer - 30) * 0.2;
 	}
 
 	update()
@@ -507,12 +591,12 @@ class ConsoleLog extends Tower
 			{
 				this.timer = this.maxTimer;
 				stroke(255, 0, 0);
-				strokeWeight(3);
+				strokeWeight(5);
 
 				closestEnemy.damage(closestEnemy.elementType == Element.Logic ? this.damage * 2 : (closestEnemy.elementType == Element.Syntax ? this.damage * 0.5 : this.damage));
 
-				line(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
-					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
+				line(this.xPlus + pixelsPerCell / 2, 
+					this.yPlus + pixelsPerCell / 2,
 					closestEnemy.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2,
 					closestEnemy.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2);
 			}
@@ -525,29 +609,39 @@ class ConsoleLog extends Tower
 		stroke(50);
 		strokeWeight(2);
 
-		triangle(this.cell.x * pixelsPerCell + leftBarWidth + colSpace + pixelsPerCell / 2, this.cell.y * pixelsPerCell + rowSpace + 5,
-			this.cell.x * pixelsPerCell + leftBarWidth + colSpace + 5, this.cell.y * pixelsPerCell + rowSpace+ pixelsPerCell - 5,
-			this.cell.x * pixelsPerCell + leftBarWidth + colSpace + pixelsPerCell - 5, this.cell.y * pixelsPerCell + rowSpace + pixelsPerCell - 5);
+		triangle(this.xPlus + pixelsPerCell / 2, this.yPlus + 5,
+			this.xPlus + 5,  this.yPlus + pixelsPerCell - 5,
+			this.xPlus + pixelsPerCell - 5, this.yPlus + pixelsPerCell - 5);
+
+		super.render();
 	}
 }
+
+const documentationRange = 2;
 
 class Documentation extends Tower
 {
 	constructor(cell)
 	{
-		super(cell, 75);
+		super(cell, 50);
 
 		this.maxTimer = 40;
-		this.timer = this.maxTimer;
 		this.animationTimer = random(0, Math.PI * 2);
-		this.range = 4.5;
-		this.damage = 4;
+		this.range = documentationRange;
+		this.damage = 6;
 
 		this.drones = new Array(3);
 		for (let i = 0; i < this.drones.length; i++)
 		{	//                 target   timer
 			this.drones[i] = [undefined, 0];
 		}
+	}
+
+	upgrade()
+	{
+		this.increaseUpgradeCost();
+		this.damage *= 1.9;
+		this.range += 0.2;
 	}
 
 	update()
@@ -608,7 +702,7 @@ class Documentation extends Tower
 				else
 				{
 					stroke(255, 0, 255);
-					strokeWeight(3);
+					strokeWeight(4);
 					line(this.drones[i][0].x * pixelsPerCell + pixelsPerCell / 2 +  0.5 + leftBarWidth + colSpace - Math.sin(this.animationTimer + Math.PI * 2 * (i/3)) * pixelsPerCell, 
 						this.drones[i][0].y  * pixelsPerCell + pixelsPerCell / 2 + 0.5 + rowSpace + Math.cos(this.animationTimer + Math.PI * 2 * (i/3))* pixelsPerCell,
 						this.drones[i][0].x * pixelsPerCell + pixelsPerCell / 2 +  0.5 + leftBarWidth + colSpace, 
@@ -625,32 +719,259 @@ class Documentation extends Tower
 		stroke(100, 30, 100);
 		strokeWeight(2);
 
-		let xPlus = 0.5 + leftBarWidth + colSpace;
-		let yPlus = 0.5 + rowSpace;
 		let rectSize = pixelsPerCell / 2 - 4;
 
-		rect(this.cell.x * pixelsPerCell + xPlus + 2, this.cell.y * pixelsPerCell + yPlus + 2, rectSize, rectSize);
-		rect(this.cell.x * pixelsPerCell + xPlus + 2 + pixelsPerCell / 2, this.cell.y * pixelsPerCell + yPlus + 2, rectSize, rectSize);
-		rect(this.cell.x * pixelsPerCell + xPlus + 2, this.cell.y * pixelsPerCell + yPlus + 2 + pixelsPerCell / 2, rectSize, rectSize);
-		rect(this.cell.x * pixelsPerCell + xPlus + 2 + pixelsPerCell / 2, this.cell.y * pixelsPerCell + yPlus + 2 + pixelsPerCell / 2, rectSize, rectSize);
+		rect(this.xPlus + 2, this.yPlus + 2, rectSize, rectSize);
+		rect(this.xPlus + 2 + pixelsPerCell / 2, this.yPlus + 2, rectSize, rectSize);
+		rect(this.xPlus + 2, this.yPlus + 2 + pixelsPerCell / 2, rectSize, rectSize);
+		rect(this.xPlus + 2 + pixelsPerCell / 2, this.yPlus + 2 + pixelsPerCell / 2, rectSize, rectSize);
 
 		fill(255, 100, 255);
 		stroke(140, 90, 140);
 		strokeWeight(1);
 		for (let i = 0; i < this.drones.length; i++)
 		{
-			print(this.drones[i][0]);
 			if (this.drones[i][0] == undefined)
 			{
-				ellipse(this.cell.x * pixelsPerCell + pixelsPerCell / 2 + xPlus - Math.sin(this.animationTimer + Math.PI * 2 * (i/3)) * pixelsPerCell, 
-					this.cell.y * pixelsPerCell + pixelsPerCell / 2 +yPlus + Math.cos(this.animationTimer + Math.PI * 2 * (i/3))* pixelsPerCell, 10);
+				//ellipse(this.cell.x * pixelsPerCell + pixelsPerCell / 2 + this.xPlus - Math.sin(this.animationTimer + Math.PI * 2 * (i/3)) * pixelsPerCell, 
+				//	this.cell.y * pixelsPerCell + pixelsPerCell / 2 + this.yPlus + Math.cos(this.animationTimer + Math.PI * 2 * (i/3))* pixelsPerCell, pixelsPerCell / 4);
+				ellipse(pixelsPerCell / 2 + this.xPlus - Math.sin(this.animationTimer + Math.PI * 2 * (i/3)) * pixelsPerCell, 
+					pixelsPerCell / 2 + this.yPlus + Math.cos(this.animationTimer + Math.PI * 2 * (i/3))* pixelsPerCell, pixelsPerCell / 4);
 			}
 			else
 			{
-				ellipse(this.drones[i][0].x * pixelsPerCell + pixelsPerCell / 2 + xPlus - Math.sin(this.animationTimer + Math.PI * 2 * (i/3)) * pixelsPerCell, 
-					this.drones[i][0].y * pixelsPerCell + pixelsPerCell / 2 +yPlus + Math.cos(this.animationTimer + Math.PI * 2 * (i/3))* pixelsPerCell, 10);
+				ellipse(this.drones[i][0].x * pixelsPerCell + pixelsPerCell / 2 + 0.5 + leftBarWidth + colSpace - Math.sin(this.animationTimer + Math.PI * 2 * (i/3)) * pixelsPerCell, 
+					this.drones[i][0].y * pixelsPerCell + pixelsPerCell / 2 + 0.5 + rowSpace + Math.cos(this.animationTimer + Math.PI * 2 * (i/3))* pixelsPerCell, pixelsPerCell / 4);
 			}
 		}
+		super.render();
+	}
+}
+
+const tryCatchRange = 9;
+
+class TryCatch extends Tower
+{
+	constructor(cell)
+	{
+		super(cell, 60);
+
+		this.maxTimer = 260;
+		this.range = tryCatchRange;
+		this.damage = 40;
+	}
+
+	upgrade()
+	{
+		this.increaseUpgradeCost();
+		this.damage *= 1.75;
+		this.range += 0.4;
+		this.maxTimer -= (this.maxTimer - 200) * 0.2;
+	}
+
+	update()
+	{
+		this.timer--;
+		if (this.timer <= 0)
+		{
+			this.timer = floor(random(0, 10));
+			let closestEnemy = null;
+			let greatestDistance = 5318008;
+			for (let i = 0; i < enemys.length; i++)
+			{
+				let distance = this.distance(enemys[i].x, enemys[i].y);
+				if (distance < this.range && enemys[i].cell.distance < greatestDistance)
+				{
+					greatestDistance = enemys[i].cell.distance;
+					closestEnemy = enemys[i];
+				}
+			}
+
+			if (closestEnemy != null)
+			{
+				this.timer = this.maxTimer + floor(random(0, 3));
+				stroke(0, 255, 255);
+				strokeWeight(10);
+
+				closestEnemy.damage(closestEnemy.elementType == Element.Runtime ? this.damage * 2 : (closestEnemy.elementType == Element.Logic ? this.damage * 0.5 : this.damage));
+
+				line(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
+					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
+					closestEnemy.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2,
+					closestEnemy.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2);
+			}
+		}
+	}
+
+	render()
+	{
+		fill(60, 200, 200);
+		stroke(100, 255, 255);
+		strokeWeight(2);
+
+		beginShape();
+		vertex(this.xPlus + pixelsPerCell / 2, this.yPlus + 2);
+		vertex(this.xPlus + (pixelsPerCell / 5) * 3, this.yPlus + (pixelsPerCell / 5) * 2);
+		vertex(this.xPlus + pixelsPerCell - 3, this.yPlus + pixelsPerCell / 2);
+		vertex(this.xPlus + (pixelsPerCell / 5) * 3, this.yPlus + (pixelsPerCell / 5) * 3);
+		vertex(this.xPlus + pixelsPerCell / 2, this.yPlus + pixelsPerCell - 3);
+		vertex(this.xPlus + (pixelsPerCell / 5) * 2, this.yPlus + (pixelsPerCell / 5) * 3);
+		vertex(this.xPlus + 2, this.yPlus + pixelsPerCell / 2);
+		vertex(this.xPlus + (pixelsPerCell / 5) * 2, this.yPlus + (pixelsPerCell / 5) * 2);
+		endShape(CLOSE);
+
+		super.render();
+	}
+}
+
+const testCaseRange = 2;
+
+class TestCase extends Tower
+{
+	constructor(cell)
+	{
+		super(cell, 40);
+
+		this.maxTimer = 140;
+		this.range = testCaseRange;
+		this.damage = 12;
+
+		this.yHeight = Math.sqrt(3) * (pixelsPerCell - 4) / 4;
+		this.xWidth = (pixelsPerCell - 4) / 4;
+	}
+
+	upgrade()
+	{
+		this.increaseUpgradeCost();
+		this.damage *= 1.75;
+		this.range += 0.15;
+		this.maxTimer -= (this.maxTimer - 110) * 0.2;
+	}
+
+	update()
+	{
+		this.timer--;
+		if (this.timer <= 0)
+		{
+			this.timer = floor(random(0, 10));
+			let allEnemys = new Array();
+			for (let i = 0; i < enemys.length; i++)
+			{
+				let distance = this.distance(enemys[i].x, enemys[i].y);
+				if (distance < this.range)
+				{
+					allEnemys.push(enemys[i]);
+				}
+			}
+
+			if (allEnemys.length > 0)
+			{
+				this.timer = this.maxTimer;
+				fill(255, 200, 80, 70);
+				stroke(255, 255, 0, 70);
+				strokeWeight(5);
+
+				for (let i = 0; i < allEnemys.length; i++)
+				{
+					allEnemys[i].damage(this.damage);
+				}
+
+				ellipse(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
+					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
+					pixelsPerCell * this.range);
+			}
+		}
+	}
+
+	render()
+	{
+		fill(235, 160, 100);
+		stroke(255, 200, 0);
+		strokeWeight(2);
+
+		beginShape();
+		vertex(this.xPlus + 2, this.yPlus + pixelsPerCell / 2);
+		vertex(this.xPlus + pixelsPerCell / 2 - this.xWidth, this.yPlus + pixelsPerCell / 2 + this.yHeight);
+		vertex(this.xPlus + pixelsPerCell / 2 + this.xWidth, this.yPlus + pixelsPerCell / 2 + this.yHeight);
+		vertex(this.xPlus + pixelsPerCell - 2, this.yPlus + pixelsPerCell / 2);
+		vertex(this.xPlus + pixelsPerCell / 2 + this.xWidth, this.yPlus + pixelsPerCell / 2 - this.yHeight);
+		vertex(this.xPlus + pixelsPerCell / 2 - this.xWidth, this.yPlus + pixelsPerCell / 2 - this.yHeight);
+		endShape(CLOSE);
+
+		super.render();
+	}
+}
+
+const commentsRange = 2.5;
+
+class Comments extends Tower
+{
+	constructor(cell)
+	{
+		super(cell, 80);
+
+		this.maxTimer = 10;
+		this.range = commentsRange;
+		this.slow = 0.7;
+	}
+
+	upgrade()
+	{
+		this.increaseUpgradeCost();
+		this.slow -= (this.slow - 0.3) * 0.2;
+		this.range += 0.2;
+	}
+
+	update()
+	{
+		this.timer--;
+		if (this.timer <= 0)
+		{
+			this.timer = floor(random(0, 10));
+			let allEnemys = new Array();
+			for (let i = 0; i < enemys.length; i++)
+			{
+				let distance = this.distance(enemys[i].x, enemys[i].y);
+				if (distance < this.range)
+				{
+					allEnemys.push(enemys[i]);
+				}
+			}
+
+			if (allEnemys.length > 0)
+			{
+				this.timer = this.maxTimer;
+				fill(140, 200, 255, 30);
+				stroke(0, 150, 255, 30);
+				strokeWeight(2);
+
+				for (let i = 0; i < allEnemys.length; i++)
+				{
+					if (allEnemys[i].slow > this.slow)
+					{
+						allEnemys[i].slow = this.slow;
+					}
+					allEnemys[i].slowTimer = 15;
+				}
+
+				ellipse(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
+					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
+					pixelsPerCell * this.range);
+			}
+		}
+	}
+
+	render()
+	{
+		stroke(160, 255, 80);
+		strokeWeight(3);
+
+		line(this.xPlus + 4, this.yPlus + pixelsPerCell - 4, 
+			this.xPlus + pixelsPerCell / 2, this.yPlus + 4);
+		line(this.xPlus + pixelsPerCell / 2, this.yPlus + pixelsPerCell - 4, 
+			this.xPlus + pixelsPerCell - 4, this.yPlus + 4);
+
+		super.render();
 	}
 }
 
@@ -669,18 +990,19 @@ let finish;
 let spawners = new Array();
 let enemys = new Array();
 
-let money = 200;
+let money = 300;
 let wave = -1;
+let biggestWave = 0;
 
 let deleteButton;
 let upgradeButton;
 let breakpointButton; // wall
 let consoleLogButton; // base shooting (LOGIC, syntax)
 let documentationButton; //drone latching (SYNTAX, runtime)
+let tryCatchButton; // sniper (RUNTIME, logic)
 let testCaseButton; // area of affect (NO BONUS)
 let commentsButton; // slows (NO BONUS)
-let tryCatchButton; // sniper (RUNTIME, logic)
-let startGameButton; // this . active stores the state of wether the game is paused or not
+let startGameButton; // this .active stores the state of wether the game is paused or not
 
 let framesUntilNextWave = 0;
 
@@ -692,6 +1014,8 @@ let nextType;
 
 let nextNextElement;
 let nextNextType;
+
+let isOnTitleScreen = true;
 
 function get2dArray(cols, rows)
 {
@@ -711,6 +1035,15 @@ function setup()
 
 	//Basic setup of starting board and cells
 	createCanvas(windowWidth, windowHeight);
+}
+
+function startGame()
+{
+	isOnTitleScreen = false;
+	money = 300;
+	wave = -1;
+	spawners = new Array();
+	enemys = new Array();
 
 	cols = Math.floor((windowWidth - leftBarWidth) / pixelsPerCell);
 	rows = Math.floor((windowHeight - bottomHeight) / pixelsPerCell);
@@ -727,10 +1060,10 @@ function setup()
 	consoleLogButton = new TowerButton(40 + size, 70 + size, size);
 
 	documentationButton = new TowerButton(20, 90 + size * 2, size);
-	testCaseButton = new TowerButton(40 + size, 90 + size * 2, size);
+	tryCatchButton = new TowerButton(40 + size, 90 + size * 2, size);
 
-	commentsButton = new TowerButton(20, 110 + size * 3, size);
-	tryCatchButton = new TowerButton(40 + size, 110 + size * 3, size);
+	testCaseButton = new TowerButton(20, 110 + size * 3, size);
+	commentsButton = new TowerButton(40 + size, 110 + size * 3, size);
 
 	startGameButton = new TowerButton(windowWidth - bottomHeight + 5, windowHeight - bottomHeight + 5, bottomHeight - 10);
 
@@ -874,11 +1207,18 @@ function getCell(x, y)
 
 function draw() 
 {
-	render();
-	
-	if (startGameButton.active)
+	if (isOnTitleScreen)
 	{
-		doGameLoop();
+		doTitleScreen();
+	}
+	else
+	{
+		render();
+		
+		if (startGameButton.active)
+		{
+			doGameLoop();
+		}
 	}
 }
 
@@ -909,6 +1249,10 @@ function mousePressed()
 	{
 		activateButton(documentationButton);
 	}
+	if (tryCatchButton.testClick())
+	{
+		activateButton(tryCatchButton);
+	}
 	if (testCaseButton.testClick())
 	{
 		activateButton(testCaseButton);
@@ -917,17 +1261,36 @@ function mousePressed()
 	{
 		activateButton(commentsButton);
 	}
-	if (tryCatchButton.testClick())
-	{
-		activateButton(tryCatchButton);
-	}
 
 	let x = floor((mouseX - 0.5 - leftBarWidth - colSpace) / pixelsPerCell);
 	let y = floor((mouseY - 0.5 - rowSpace) / pixelsPerCell);
 	let cell = getCell(x, y);
 	if (cell != null)
 	{
-		if (breakpointButton.active && money >= 5 && cell.walkable)
+		if (deleteButton.active)
+		{
+			if (cell.tower != null)
+			{
+				money += floor(cell.tower.cost * 0.75);
+				cell.tower = null;
+			}
+			else if (cell.tower == null && money >= 10 && !cell.walkable && cell.buildable)
+			{
+				cell.walkable = true;
+				money -= 10;
+				redoPaths();
+			}
+		}
+		if (upgradeButton.active && cell.tower != null)
+		{
+			if (money >= cell.tower.upgradeCost)
+			{
+				money -= cell.tower.upgradeCost;
+				cell.tower.upgrade();
+			}
+		}
+
+		if (breakpointButton.active && money >= 5 && cell.walkable && cell.buildable)
 		{
 			cell.walkable = !cell.walkable;
 			if (!redoPaths())
@@ -949,6 +1312,21 @@ function mousePressed()
 			cell.tower = new Documentation(cell);
 			money -= 50;
 		}
+		if (tryCatchButton.active && money >= 60 && cell.buildable && cell.tower == null && !cell.walkable)
+		{
+			cell.tower = new TryCatch(cell);
+			money -= 60;
+		}
+		if (testCaseButton.active && money >= 40 && cell.buildable && cell.tower == null && !cell.walkable)
+		{
+			cell.tower = new TestCase(cell);
+			money -= 40;
+		}
+		if (commentsButton.active && money >= 80 && cell.buildable && cell.tower == null && !cell.walkable)
+		{
+			cell.tower = new Comments(cell);
+			money -= 80;
+		}
 	}
 }
 
@@ -963,10 +1341,10 @@ function activateButton(button)
 	consoleLogButton.active = false;
 
 	documentationButton.active = false;
-	testCaseButton.active = false;
-
-	commentsButton.active = false;
 	tryCatchButton.active = false;
+
+	testCaseButton.active = false;
+	commentsButton.active = false;
 
 	button.active = !bState;
 }
@@ -1030,7 +1408,7 @@ function getElementPreview(element)
 function drawMenus()
 {
 	textSize(20);
-	textAlign(CENTER);
+	textAlign(CENTER, BASELINE);
 
 	fill(30);
 	stroke(90, 140, 170);
@@ -1065,10 +1443,10 @@ function drawMenus()
 	consoleLogButton.render(3);
 
 	documentationButton.render(4);
-	testCaseButton.render(5);
+	tryCatchButton.render(5);
 
-	commentsButton.render(6);
-	tryCatchButton.render(7);
+	testCaseButton.render(6);
+	commentsButton.render(7);
 
 	textSize(26);
 	drawTowerText(size * 4);
@@ -1086,13 +1464,22 @@ function drawMenus()
 
 function drawTowerText(size)
 {
+	if (deleteButton.active)
+	{
+		showTowerTopText("Delete", "Refunds 75% of the memory spent on a tower, but costs 10 kB to remove a breakpoint.", -1, 4, size);
+	}
+	if (upgradeButton.active)
+	{
+		showTowerTopText("Upgrade", "Levels a tower up, improving its stats.", -1, 2, size);
+	}
+
 	if (breakpointButton.active)
 	{
 		showTowerTopText("Break Point", "A wall that the errors cannot walk through. Debuggers must be placed on these.", 5, 4, size);
 	}
 	if (consoleLogButton.active)
 	{
-		showTowerTopText("Console.Log", "A standard tower that shoots the error closest to the end.", 25, 3, size);
+		showTowerTopText("Console Log", "A standard debugger that shoots the error closest to the end.", 25, 3, size);
 
 		fill(200,200,255);
 		text("200% against Logic.", 10, 260 + size, leftBarWidth - 20);
@@ -1108,6 +1495,23 @@ function drawTowerText(size)
 		fill(205,130,130);
 		text("50% against Runtime.", 10, 300 + size, leftBarWidth - 20);
 	}
+	if (tryCatchButton.active)
+	{
+		showTowerTopText("Try Catch", "A sniper debugger that has very long range and high damage, but slow fire rate.", 60, 4, size);
+
+		fill(255,200,200);
+		text("200% against Runtime.", 10, 280 + size, leftBarWidth - 20);
+		fill(130,130,205);
+		text("50% against Logic.", 10, 300 + size, leftBarWidth - 20);
+	}
+	if (testCaseButton.active)
+	{
+		showTowerTopText("Test Case", "Very low range but hits all errors in a radius around it.", 40, 3, size);
+	}
+	if (commentsButton.active)
+	{
+		showTowerTopText("Comments", "Doesn't hurt errors but slows them down significantly in a radius.", 80, 3, size);
+	}
 }
 
 function showTowerTopText(title, desc, amount, descLines, size)
@@ -1118,7 +1522,10 @@ function showTowerTopText(title, desc, amount, descLines, size)
 	textSize(16);
 	fill(200);
 	text(desc, 13, 165 + size, leftBarWidth - 20);
-	text("Cost: " + amount + " kB.", 13, 170 + size + descLines * 20, leftBarWidth - 20);
+	if (amount != -1)
+	{
+		text("Cost: " + amount + " kB.", 13, 170 + size + descLines * 20, leftBarWidth - 20);
+	}
 }
 
 function render()
@@ -1142,11 +1549,12 @@ function render()
 	stroke(60, 100, 130);
 	strokeWeight(0.5);
 
+	let towerRenderQueue = new Array();
 	for (let x = 0; x < cols; x++)
 	{
 		for (let y = 0; y < rows; y++)
 		{
-			cells[x][y].render(false);
+			towerRenderQueue.push(cells[x][y].render(false));
 		}
 	}
 
@@ -1162,7 +1570,17 @@ function render()
 		enemys[i].render();
 	}
 
+	for (let i = 0; i < towerRenderQueue.length; i++)
+	{
+		if (towerRenderQueue[i] != undefined)
+		{
+			towerRenderQueue[i].render();
+		}
+	}
+
 	drawMenus();
+
+	drawRangeDisplay();
 }
 
 function spawnWave()
@@ -1253,6 +1671,10 @@ function spawnWave()
 
 	framesUntilNextWave = 1100;
 	wave++;
+	if (biggestWave < wave)
+	{
+		biggestWave = wave;
+	}
 }
 
 function doGameLoop()
@@ -1277,7 +1699,18 @@ function doGameLoop()
 		{
 			if (val == -1)
 			{
-				money += 5;
+				if (enemys[i].enemyType == EnemyType.Normal)
+				{
+					money += floor(5 * (wave / 14 + 1));
+				}
+				else if (enemys[i].enemyType == EnemyType.Swarm)
+				{
+					money += floor(wave / 14 + 1);
+				}
+				else if (enemys[i].enemyType == EnemyType.Tank)
+				{
+					money += floor(17 * (wave / 14 + 1));
+				}
 			}
 			else
 			{
@@ -1288,5 +1721,107 @@ function doGameLoop()
 		}
 	}
 
+	if (finish.health <= 0)
+	{
+		isOnTitleScreen = true;
+	}
+
 	framesUntilNextWave--;
+}
+
+function drawRangeDisplay() // also does upgrade text
+{
+	let x = floor((mouseX - 0.5 - leftBarWidth - colSpace) / pixelsPerCell);
+	let y = floor((mouseY - 0.5 - rowSpace) / pixelsPerCell);
+	let cell = getCell(x, y);
+
+	fill(140, 140, 140, 90);
+	stroke(190, 190, 190, 90);
+	strokeWeight(4);
+
+	if (cell != null)
+	{
+		if (cell.tower == null && cell.buildable && !cell.walkable)
+		{
+			x = x * pixelsPerCell + leftBarWidth + colSpace + pixelsPerCell / 2;
+			y = y * pixelsPerCell + rowSpace + pixelsPerCell / 2;
+			if (consoleLogButton.active)
+			{
+				ellipse(x, y, consoleLogRange * pixelsPerCell * 2);
+			}
+			if (documentationButton.active)
+			{
+				ellipse(x, y, documentationRange * pixelsPerCell * 2);
+			}
+			if (tryCatchButton.active)
+			{
+				ellipse(x, y, tryCatchRange * pixelsPerCell * 2);
+			}
+			if (testCaseButton.active)
+			{
+				ellipse(x, y, testCaseRange * pixelsPerCell * 2);
+			}
+			if (commentsButton.active)
+			{
+				ellipse(x, y, commentsRange * pixelsPerCell * 2);
+			}
+		}
+		else if (cell.tower != null)
+		{
+			x = x * pixelsPerCell + leftBarWidth + colSpace + pixelsPerCell / 2;
+			y = y * pixelsPerCell + rowSpace + pixelsPerCell / 2;
+
+			ellipse(x, y, cell.tower.range * pixelsPerCell * 2);
+			if (upgradeButton.active)
+			{
+				fill(255, 255, 120);
+				stroke(0);
+				strokeWeight(4);
+
+				text("Upgrade: " + cell.tower.upgradeCost + " kB", x, y - pixelsPerCell);
+			}
+		}
+	}
+}
+
+function doTitleScreen()
+{
+	//draw background colour
+	background(0);
+	textSize(60);
+	noStroke();
+	fill(255);
+
+	textAlign(CENTER);
+	text("Error Defense!", windowWidth / 2, 60);
+	textSize(20);
+	fill(180);
+	text("The errors are invading your code! Stop them before it crashes!", windowWidth / 2, 100);
+
+	fill(210);
+	text("Place debuggers to stop the errors.", windowWidth / 2, 180);
+	text("Survive as many waves of errors as possible.", windowWidth / 2, 210);
+	text("Gain memory for killing errors so you can place more debuggers.", windowWidth / 2, 240);
+
+	textSize(40);
+	text("Highest wave this session: " + biggestWave, windowWidth / 2, windowHeight - 20);
+
+	stroke(90);
+	strokeWeight(2);
+	if (mouseX >= windowWidth / 2 - 100 && mouseX <= windowWidth / 2 + 100 && mouseY >= windowHeight / 2 - 40 && mouseY <= windowHeight / 2 + 40)
+	{
+		fill(110);
+		if (mouseIsPressed)
+		{
+			startGame();
+		}
+	}
+	else
+	{
+		fill(60);
+	}
+	rect(windowWidth / 2 - 100, windowHeight / 2 - 40, 200, 80);
+	fill(255);
+	textSize(40);
+	text("Start!", windowWidth / 2, windowHeight / 2 + 15);
 }

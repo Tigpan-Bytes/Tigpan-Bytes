@@ -7,11 +7,13 @@
 // - Vector2 implementation
 // - Made my own shapes
 
+//creates a variable type to store 2 number
 function Vector2(x, y) {
 	this.x = x;
 	this.y = y;
 }
 
+//lets you 
 Vector2.prototype = {
 	add: function(vector) {
 		return new Vector2(this.x + vector.x, this.y + vector.y);
