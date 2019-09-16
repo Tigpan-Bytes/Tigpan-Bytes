@@ -531,6 +531,7 @@ class Tower
 	increaseUpgradeCost()
 	{
 		this.level++;
+		this.cost += this.upgradeCost;
 		this.upgradeCost = this.upgradeCost * 2;
 	}
 
@@ -949,13 +950,13 @@ class Comments extends Tower
 
 		this.maxTimer = 10;
 		this.range = commentsRange;
-		this.slow = 0.7;
+		this.slow = 0.75;
 	}
 
 	upgrade()
 	{
 		this.increaseUpgradeCost();
-		this.slow -= (this.slow - 0.3) * 0.2;
+		this.slow -= (this.slow - 0.4) * 0.2;
 		this.range += 0.2;
 	}
 
