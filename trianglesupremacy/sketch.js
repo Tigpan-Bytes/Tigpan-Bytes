@@ -443,7 +443,7 @@ class EDiamond extends Enemy //lots of health that moves toward the player quick
 
 		this.velocity = new Vector2(random(-1, 1), random(-1, 1));
 		this.velocity.normalize();
-		this.positionOffset = new Vector2(random(-15, 15), random(-15, 15));
+		this.positionOffset = new Vector2(random(-5, 5), random(-5, 5));
 	}
 
 	attack(damage) // Hexagon dies in one hit no matter what
@@ -493,7 +493,6 @@ class EDiamond extends Enemy //lots of health that moves toward the player quick
 		{
 			this.velocity = this.velocity.moveTowards(this.player.position.subtract(this.position).add(this.positionOffset), this.accelerationSpeed);
 			this.velocity.normalize();
-	
 		}
 		else
 		{
