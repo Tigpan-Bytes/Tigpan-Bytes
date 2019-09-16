@@ -396,8 +396,8 @@ class Enemy
 		this.x = cell.x;
 		this.y = cell.y;
 
-		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 5 : 90));
-		this.health *= 0.25 + Math.pow((wave * 0.15) + 1, 1.4);
+		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 7 : 100));
+		this.health *= 0.1 + Math.pow((wave * 0.175) + 1, 1.5);
 		this.maxHealth = this.health;
 	}
 
@@ -760,9 +760,12 @@ class TryCatch extends Tower
 	{
 		super(cell, 60);
 
-		this.maxTimer = 260;
+		this.maxTimer = 300;
 		this.range = tryCatchRange;
 		this.damage = 40;
+		this.firedTime = 0;
+		this.firedX = 0;
+		this.firedY = 0;
 	}
 
 	upgrade()
@@ -770,7 +773,7 @@ class TryCatch extends Tower
 		this.increaseUpgradeCost();
 		this.damage *= 1.75;
 		this.range += 0.4;
-		this.maxTimer -= (this.maxTimer - 200) * 0.2;
+		this.maxTimer -= (this.maxTimer - 230) * 0.2;
 	}
 
 	update()
@@ -799,10 +802,13 @@ class TryCatch extends Tower
 
 				closestEnemy.damage(closestEnemy.elementType == Element.Runtime ? this.damage * 2 : (closestEnemy.elementType == Element.Logic ? this.damage * 0.5 : this.damage));
 
+				this.firedX = closestEnemy.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2;
+				this.firedY = closestEnemy.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2;
 				line(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
 					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
-					closestEnemy.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2,
-					closestEnemy.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2);
+					this.firedX,
+					this.firedY);
+				this.firedTime = 3;
 			}
 		}
 	}
@@ -823,6 +829,18 @@ class TryCatch extends Tower
 		vertex(this.xPlus + 2, this.yPlus + pixelsPerCell / 2);
 		vertex(this.xPlus + (pixelsPerCell / 5) * 2, this.yPlus + (pixelsPerCell / 5) * 2);
 		endShape(CLOSE);
+		
+		if (this.firedTime > 0)
+		{
+			stroke(0, 255, 255);
+			strokeWeight(10);
+
+			line(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
+				this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
+				this.firedX,
+				this.firedY);
+			this.firedTime--;
+		}
 
 		super.render();
 	}
@@ -834,11 +852,12 @@ class TestCase extends Tower
 {
 	constructor(cell)
 	{
-		super(cell, 40);
+		super(cell, 50);
 
 		this.maxTimer = 160;
 		this.range = testCaseRange;
 		this.damage = 11;
+		this.firedTime = 0;
 
 		this.yHeight = Math.sqrt(3) * (pixelsPerCell - 4) / 4;
 		this.xWidth = (pixelsPerCell - 4) / 4;
@@ -883,6 +902,7 @@ class TestCase extends Tower
 				ellipse(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
 					this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
 					pixelsPerCell * this.range * 2);
+				this.firedTime = 7;
 			}
 		}
 	}
@@ -901,6 +921,18 @@ class TestCase extends Tower
 		vertex(this.xPlus + pixelsPerCell / 2 + this.xWidth, this.yPlus + pixelsPerCell / 2 - this.yHeight);
 		vertex(this.xPlus + pixelsPerCell / 2 - this.xWidth, this.yPlus + pixelsPerCell / 2 - this.yHeight);
 		endShape(CLOSE);
+
+		if (this.firedTime > 0)
+		{
+			fill(255, 200, 80, 70);
+			stroke(255, 255, 0, 70);
+			strokeWeight(5);
+
+			ellipse(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
+				this.cell.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2,
+				pixelsPerCell * this.range * 2);
+			this.firedTime--;
+		}
 
 		super.render();
 	}
@@ -1321,10 +1353,10 @@ function mousePressed()
 			cell.tower = new TryCatch(cell);
 			money -= 60;
 		}
-		if (testCaseButton.active && money >= 40 && cell.buildable && cell.tower == null && !cell.walkable)
+		if (testCaseButton.active && money >= 50 && cell.buildable && cell.tower == null && !cell.walkable)
 		{
 			cell.tower = new TestCase(cell);
-			money -= 40;
+			money -= 50;
 		}
 		if (commentsButton.active && money >= 80 && cell.buildable && cell.tower == null && !cell.walkable)
 		{
@@ -1510,7 +1542,7 @@ function drawTowerText(size)
 	}
 	if (testCaseButton.active)
 	{
-		showTowerTopText("Test Case", "Very low range but hits all errors in a radius around it.", 40, 3, size);
+		showTowerTopText("Test Case", "Very low range but hits all errors in a radius around it.", 50, 3, size);
 	}
 	if (commentsButton.active)
 	{
