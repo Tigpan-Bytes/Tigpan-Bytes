@@ -389,7 +389,7 @@ class Enemy
 		this.cell = cell;
 		this.wave = wave;
 
-		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.0325 : 0.015));
+		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.035 : 0.015));
 		this.speed *= 1 + Math.sqrt((wave + 3) / 20);
 		this.slow = 1;
 		this.slowTimer = 0;
@@ -398,7 +398,7 @@ class Enemy
 		this.y = cell.y;
 
 		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 7 : 100));
-		this.health *= 0.1 + Math.pow((wave * 0.2) + 1, 1.55);
+		this.health *= Math.pow((wave * 0.1) + 1, 2);
 		this.maxHealth = this.health;
 	}
 
@@ -622,7 +622,7 @@ class ConsoleLog extends Tower
 	}
 }
 
-const documentationRange = 2;
+const documentationRange = 1.75;
 
 class Documentation extends Tower
 {
@@ -633,7 +633,7 @@ class Documentation extends Tower
 		this.maxTimer = 40;
 		this.animationTimer = random(0, Math.PI * 2);
 		this.range = documentationRange;
-		this.damage = 6;
+		this.damage = 5;
 
 		this.drones = new Array(3);
 		for (let i = 0; i < this.drones.length; i++)
@@ -855,9 +855,9 @@ class TestCase extends Tower
 	{
 		super(cell, 50);
 
-		this.maxTimer = 130;
+		this.maxTimer = 60;
 		this.range = testCaseRange;
-		this.damage = 11;
+		this.damage = 5;
 		this.firedTime = 0;
 
 		this.yHeight = Math.sqrt(3) * (pixelsPerCell - 4) / 4;
@@ -869,7 +869,7 @@ class TestCase extends Tower
 		this.increaseUpgradeCost();
 		this.damage *= 1.75;
 		this.range += 0.15;
-		this.maxTimer -= (this.maxTimer - 120) * 0.2;
+		this.maxTimer -= (this.maxTimer - 40) * 0.2;
 	}
 
 	update()
@@ -1107,16 +1107,16 @@ function startGame()
 
 	startGameButton = new TowerButton(windowWidth - bottomHeight + 5, windowHeight - bottomHeight + 5, bottomHeight - 10);
 
-	thisElement = floor(random(0,3));
+	let startE = floor(random(0,3));
+	let incrementE = floor(random(1,3));
+	thisElement = startE;
 	thisType = 0;
 
-	let e = floor(random(0, 3));
-	nextElement = ((e == thisElement) ? floor(random(0, 3)) : e);
+	nextElement = (startE + incrementE) % 3;
 	nextType = 0;
 
-	e = floor(random(0, 3));
-	nextNextElement = ((e == nextElement) ? floor(random(0, 3)) : e);
-	nextNextType = floor(random(0,3));
+	nextNextElement = (startE + incrementE + incrementE) % 3;
+	nextNextType = 0;
 
 	do
 	{
@@ -1583,7 +1583,7 @@ function drawTowerText(size)
 	}
 	if (upgradeButton.active)
 	{
-		showTowerTopText("Upgrade", "Levels a tower up, improving its stats.", -1, 2, size);
+		showTowerTopText("Upgrade", "Levels a debugger up. Improving its stats for an ever increasing amount.", -1, 3, size);
 	}
 
 	if (breakpointButton.active)
@@ -1601,7 +1601,7 @@ function drawTowerText(size)
 	}
 	if (documentationButton.active)
 	{
-		showTowerTopText("Documentation", "Latchs drones onto enemys until they die. Effective at the start of long paths.", 50, 4, size);
+		showTowerTopText("Documentation", "Latchs drones onto errors until they die. Effective at the start of long paths.", 50, 4, size);
 
 		fill(200,255,200);
 		text("200% against Syntax.", 10, 280 + size, leftBarWidth - 20);
@@ -1693,7 +1693,7 @@ function render()
 
 	drawMenus();
 
-	drawRangeDisplay();
+	drawMouseOverDisplay();
 
 	if (failTimer > 0)
 	{
@@ -1793,17 +1793,18 @@ function spawnWave()
 	//picks next wave based on current wave and previous wave
 	let e = floor(random(0, 3));
 	nextNextElement = (e == nextElement ? floor(random(0, 3)) : e);
-	if ((wave % 10) == 5)
+
+	if (((wave + 4) % 10) == 5)
 	{
 		nextNextType = EnemyType.Swarm;
 	}
-	else if ((wave % 10) == 0)
+	else if (((wave + 4) % 10) == 0)
 	{
 		nextNextType = EnemyType.Tank;
 	}
 	else
 	{
-		nextNextType = ((wave % 3) == 0 ? EnemyType.Normal : floor(random(0, 3)));
+		nextNextType = (((wave + 4) % 2) == 0 ? EnemyType.Normal : floor(random(0, 3)));
 	}
 
 	framesUntilNextWave = 1100;
@@ -1866,7 +1867,7 @@ function doGameLoop()
 	framesUntilNextWave--;
 }
 
-function drawRangeDisplay() // also does upgrade text
+function drawMouseOverDisplay()
 {
 	let x = floor((mouseX - 0.5 - leftBarWidth - colSpace) / pixelsPerCell);
 	let y = floor((mouseY - 0.5 - rowSpace) / pixelsPerCell);
@@ -1902,6 +1903,15 @@ function drawRangeDisplay() // also does upgrade text
 			{
 				ellipse(x, y, commentsRange * pixelsPerCell * 2);
 			}
+
+			if (deleteButton.active)
+			{
+				fill(255, 120, 100);
+				stroke(0);
+				strokeWeight(4);
+
+				text("Remove: 10 kB", x, y - pixelsPerCell);
+			}
 		}
 		else if (cell.tower != null)
 		{
@@ -1916,6 +1926,14 @@ function drawRangeDisplay() // also does upgrade text
 				strokeWeight(4);
 
 				text("Upgrade: " + cell.tower.upgradeCost + " kB", x, y - pixelsPerCell);
+			}
+			else if (deleteButton.active)
+			{
+				fill(120, 255, 160);
+				stroke(0);
+				strokeWeight(4);
+
+				text("Sell: " + floor(cell.tower.cost * 0.75) + " kB", x, y - pixelsPerCell);
 			}
 		}
 	}
@@ -1939,6 +1957,7 @@ function doTitleScreen()
 	text("Place debuggers to stop the errors.", windowWidth / 2, 180);
 	text("Survive as many waves of errors as possible.", windowWidth / 2, 210);
 	text("Gain memory for killing errors so you can place more debuggers.", windowWidth / 2, 240);
+	text("Some debuggers have strengths and weaknesses to different enemys. Mix and match for the best result.", windowWidth / 2, 270);
 
 	textSize(40);
 	text("Highest wave this session: " + biggestWave, windowWidth / 2, windowHeight - 20);
