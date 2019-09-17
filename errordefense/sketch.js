@@ -390,7 +390,7 @@ class Enemy
 		this.wave = wave;
 
 		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.035 : 0.015));
-		this.speed *= 1 + Math.sqrt((wave + 3) / 20);
+		this.speed *= 1 + Math.sqrt((wave + 3) / 10);
 		this.slow = 1;
 		this.slowTimer = 0;
 
@@ -398,7 +398,7 @@ class Enemy
 		this.y = cell.y;
 
 		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 7 : 100));
-		this.health *= Math.pow((wave * 0.1) + 1, 2);
+		this.health *= Math.pow((wave * 0.125) + 1, 2);
 		this.maxHealth = this.health;
 	}
 
@@ -917,9 +917,9 @@ class TestCase extends Tower
 	{
 		super(cell, 50);
 
-		this.maxTimer = 60;
+		this.maxTimer = 70;
 		this.range = testCaseRange;
-		this.damage = 7;
+		this.damage = 6;
 		this.firedTime = 0;
 
 		this.yHeight = Math.sqrt(3) * (pixelsPerCell - 4) / 4;
@@ -932,7 +932,7 @@ class TestCase extends Tower
 		this.increaseUpgradeCost();
 		this.damage *= 1.75;
 		this.range += 0.15;
-		this.maxTimer -= (this.maxTimer - 40) * 0.2;
+		this.maxTimer -= (this.maxTimer - 46) * 0.2;
 	}
 
 	update()
@@ -1718,7 +1718,7 @@ function drawTowerText(size)
 {
 	if (deleteButton.active)
 	{
-		showTowerTopText("Delete", "Refunds 75% of the memory spent on a tower, but costs 10 kB to remove a breakpoint.", -1, 4, size);
+		showTowerTopText("Delete", "Refunds 75% of the memory spent on a debugger, but costs 10 kB to remove a breakpoint.", -1, 4, size);
 	}
 	if (upgradeButton.active)
 	{
@@ -2049,7 +2049,7 @@ function drawMouseOverDisplay()
 				stroke(0);
 				strokeWeight(4);
 
-				text("Remove: Costs 10 kB", x, y - pixelsPerCell);
+				text("Remove: 10 kB", x, y - pixelsPerCell);
 			}
 		}
 		else if (cell.tower != null)
@@ -2072,7 +2072,7 @@ function drawMouseOverDisplay()
 				stroke(0);
 				strokeWeight(4);
 
-				text("Sell: Refunds " + floor(cell.tower.cost * 0.75) + " kB", x, y - pixelsPerCell);
+				text("Sell: " + floor(cell.tower.cost * 0.75) + " kB", x, y - pixelsPerCell);
 			}
 		}
 	}
