@@ -398,7 +398,7 @@ class Enemy
 		this.y = cell.y;
 
 		this.health = (enemyType == EnemyType.Normal ? 22 : (enemyType == EnemyType.Swarm ? 6 : 100));
-		this.health *= Math.pow((wave * 0.1) + 1, 2);
+		this.health *= Math.pow((wave * 0.12) + 1, 2);
 		this.maxHealth = this.health;
 	}
 
@@ -621,7 +621,7 @@ class ConsoleLog extends Tower
 	{
 		moneyFromConsoleLog += this.upgradeCost;
 		this.increaseUpgradeCost();
-		this.damage *= 1.9;
+		this.damage *= 2.1;
 		this.range += 0.35;
 		this.maxTimer -= (this.maxTimer - 30) * 0.2;
 	}
@@ -700,7 +700,7 @@ class Documentation extends Tower
 	{
 		moneyFromDocumentation += this.upgradeCost;
 		this.increaseUpgradeCost();
-		this.damage *= 2.1;
+		this.damage *= 2.25;
 		this.range += 0.2;
 	}
 
@@ -832,7 +832,7 @@ class TryCatch extends Tower
 	{
 		moneyFromTryCatch += this.upgradeCost;
 		this.increaseUpgradeCost();
-		this.damage *= 1.9;
+		this.damage *= 2.1;
 		this.range += 0.4;
 		this.maxTimer -= (this.maxTimer - 230) * 0.2;
 	}
@@ -930,7 +930,7 @@ class TestCase extends Tower
 	{
 		moneyFromTestCase += this.upgradeCost;
 		this.increaseUpgradeCost();
-		this.damage *= 1.9;
+		this.damage *= 2.1;
 		this.range += 0.15;
 		this.maxTimer -= (this.maxTimer - 46) * 0.2;
 	}
