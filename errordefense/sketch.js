@@ -1974,6 +1974,8 @@ function doGameLoop()
 		}
 	}
 
+	print(Math.log10(5));
+
 	for (let i = 0; i < enemys.length; i++)
 	{
 		let val = enemys[i].update();
@@ -1984,15 +1986,15 @@ function doGameLoop()
 				if (enemys[i].enemyType == EnemyType.Normal)
 				{
 					//money += floor(5 * (wave / 18 + 1.2));
-					money += floor(5 * (Math.log(wave + 50) * 30 - 45));
+					money += floor((Math.log10(wave + 50) * 30 - 45));
 				}
 				else if (enemys[i].enemyType == EnemyType.Swarm)
 				{
-					money += floor((Math.log(wave + 50) * 30 - 45));
+					money += floor(0.2 * (Math.log10(wave + 50) * 30 - 45));
 				}
 				else if (enemys[i].enemyType == EnemyType.Tank)
 				{
-					money += floor(17 * (Math.log(wave + 50) * 30 - 45));
+					money += floor(17 * (Math.log10(wave + 50) * 30 - 45));
 				}
 			}
 			else
