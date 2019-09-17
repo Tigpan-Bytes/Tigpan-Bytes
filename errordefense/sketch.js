@@ -3,12 +3,12 @@
 // Thursday 12th September, 2019
 //
 // Extra for Experts:
-// - 1800+ lines
-// - Polymorphism
+// - 2100+ lines
+// - Polymorphism and inheritance
 // - Tons of arrays
-// - 1800+ lines
+// - 2100+ lines
 // - Reactive Pathfinding
-// - Did I mention 1800+ lines?
+// - Did I mention 2100+ lines?
 
 class Tile
 {
@@ -454,7 +454,57 @@ class Enemy
 		{
 			//stops drones from continuing to latch
 			this.health = -1;
-			return (this.enemyType == EnemyType.Normal ? 5 : (this.enemyType == EnemyType.Swarm ? 2 : 15))
+			if (this.enemyType == EnemyType.Normal)
+			{
+				damageTakenFromNormal += 5;
+				if (this.elementType == Element.Logic)
+				{
+					damageTakenFromLogic += 5;
+				}
+				else if (this.elementType == Element.Syntax)
+				{
+					damageTakenFromSyntax += 5;
+				}
+				else
+				{
+					damageTakenFromRuntime += 5;
+				}
+				return 5;
+			}
+			else if (this.enemyType == EnemyType.Swarm)
+			{
+				damageTakenFromSwarm += 2;
+				if (this.elementType == Element.Logic)
+				{
+					damageTakenFromLogic += 2;
+				}
+				else if (this.elementType == Element.Syntax)
+				{
+					damageTakenFromSyntax += 2;
+				}
+				else
+				{
+					damageTakenFromRuntime += 2;
+				}
+				return 2;
+			}
+			else
+			{
+				damageTakenFromTank += 15;
+				if (this.elementType == Element.Logic)
+				{
+					damageTakenFromLogic += 15;
+				}
+				else if (this.elementType == Element.Syntax)
+				{
+					damageTakenFromSyntax += 15;
+				}
+				else
+				{
+					damageTakenFromRuntime += 15;
+				}
+				return 15;
+			}
 		}
 		return 0;
 	}
@@ -569,6 +619,7 @@ class ConsoleLog extends Tower
 
 	upgrade()
 	{
+		moneyFromConsoleLog += this.upgradeCost;
 		this.increaseUpgradeCost();
 		this.damage *= 1.75;
 		this.range += 0.35;
@@ -599,7 +650,9 @@ class ConsoleLog extends Tower
 				stroke(255, 0, 0);
 				strokeWeight(5);
 
-				closestEnemy.damage(closestEnemy.elementType == Element.Logic ? this.damage * 2 : (closestEnemy.elementType == Element.Syntax ? this.damage * 0.5 : this.damage));
+				let dam = closestEnemy.elementType == Element.Logic ? this.damage * 2 : (closestEnemy.elementType == Element.Syntax ? this.damage * 0.5 : this.damage)
+				closestEnemy.damage(dam);
+				damageFromConsoleLog += dam;
 
 				line(this.xPlus + pixelsPerCell / 2, 
 					this.yPlus + pixelsPerCell / 2,
@@ -645,6 +698,7 @@ class Documentation extends Tower
 
 	upgrade()
 	{
+		moneyFromDocumentation += this.upgradeCost;
 		this.increaseUpgradeCost();
 		this.damage *= 1.9;
 		this.range += 0.2;
@@ -700,7 +754,11 @@ class Documentation extends Tower
 			if (this.drones[i][1] <= 0 && this.drones[i][0] != undefined)
 			{
 				this.drones[i][1] = 50;
-				this.drones[i][0].damage(this.drones[i][0].elementType == Element.Syntax ? this.damage * 2 : (this.drones[i][0].elementType == Element.Runtime ? this.damage * 0.5 : this.damage));
+
+				let dam = this.drones[i][0].elementType == Element.Syntax ? this.damage * 2 : (this.drones[i][0].elementType == Element.Runtime ? this.damage * 0.5 : this.damage)
+				this.drones[i][0].damage(dam);
+				damageFromDocumentation += dam;
+
 				if (this.drones[i][0].health <= 0)
 				{
 					this.drones[i][0] = undefined;
@@ -772,6 +830,7 @@ class TryCatch extends Tower
 
 	upgrade()
 	{
+		moneyFromTryCatch += this.upgradeCost;
 		this.increaseUpgradeCost();
 		this.damage *= 1.75;
 		this.range += 0.4;
@@ -802,7 +861,9 @@ class TryCatch extends Tower
 				stroke(0, 255, 255);
 				strokeWeight(10);
 
-				closestEnemy.damage(closestEnemy.elementType == Element.Runtime ? this.damage * 2 : (closestEnemy.elementType == Element.Logic ? this.damage * 0.5 : this.damage));
+				let dam = closestEnemy.elementType == Element.Runtime ? this.damage * 2 : (closestEnemy.elementType == Element.Logic ? this.damage * 0.5 : this.damage);
+				closestEnemy.damage(dam);
+				damageFromTryCatch += dam;
 
 				this.firedX = closestEnemy.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2;
 				this.firedY = closestEnemy.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2;
@@ -858,7 +919,7 @@ class TestCase extends Tower
 
 		this.maxTimer = 60;
 		this.range = testCaseRange;
-		this.damage = 5;
+		this.damage = 7;
 		this.firedTime = 0;
 
 		this.yHeight = Math.sqrt(3) * (pixelsPerCell - 4) / 4;
@@ -867,6 +928,7 @@ class TestCase extends Tower
 
 	upgrade()
 	{
+		moneyFromTestCase += this.upgradeCost;
 		this.increaseUpgradeCost();
 		this.damage *= 1.75;
 		this.range += 0.15;
@@ -899,6 +961,7 @@ class TestCase extends Tower
 				for (let i = 0; i < allEnemys.length; i++)
 				{
 					allEnemys[i].damage(this.damage);
+					damageFromTestCase += this.damage;
 				}
 
 				ellipse(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
@@ -955,6 +1018,7 @@ class Comments extends Tower
 
 	upgrade()
 	{
+		moneyFromComments += this.upgradeCost;
 		this.increaseUpgradeCost();
 		this.slow -= (this.slow - 0.4) * 0.2;
 		this.range += 0.2;
@@ -1058,6 +1122,29 @@ let isOnTitleScreen = true;
 let failText = "";
 let failTimer = 0;
 
+let damageFromConsoleLog;
+let damageFromDocumentation;
+let damageFromTryCatch;
+let damageFromTestCase;
+
+let moneyFromBreakpoints;
+let moneyFromConsoleLog;
+let moneyFromDocumentation;
+let moneyFromTryCatch;
+let moneyFromTestCase;
+let moneyFromComments;
+
+let damageTakenFromLogic;
+let damageTakenFromSyntax;
+let damageTakenFromRuntime;
+
+let damageTakenFromNormal;
+let damageTakenFromSwarm;
+let damageTakenFromTank;
+
+let finalKillElement;
+let finalKillType;
+
 function get2dArray(cols, rows)
 {
 	//returns an empty two dimensional array with the given rows and columns
@@ -1085,6 +1172,26 @@ function startGame()
 	wave = -1;
 	spawners = new Array();
 	enemys = new Array();
+
+	damageFromConsoleLog = 0;
+	damageFromDocumentation = 0;
+	damageFromTryCatch = 0;
+	damageFromTestCase = 0;
+
+	moneyFromBreakpoints = 0;
+	moneyFromConsoleLog = 0;
+	moneyFromDocumentation = 0;
+	moneyFromTryCatch = 0;
+	moneyFromTestCase = 0;
+	moneyFromComments = 0;
+
+	damageTakenFromLogic = 0;
+	damageTakenFromSyntax = 0;
+	damageTakenFromRuntime = 0;
+
+	damageTakenFromNormal = 0;
+	damageTakenFromSwarm = 0;
+	damageTakenFromTank = 0;
 
 	cols = Math.floor((windowWidth - leftBarWidth) / pixelsPerCell);
 	rows = Math.floor((windowHeight - bottomHeight) / pixelsPerCell);
@@ -1256,21 +1363,32 @@ function draw()
 	{
 		render();
 		
-		if (startGameButton.active)
+		if (finish.health > 0)
 		{
-			doGameLoop();
+			if (startGameButton.active)
+			{
+				doGameLoop();
+			}
+		}
+		else
+		{
+			drawDeathScreen();
 		}
 
 		if (keyIsDown(27)) //escape
 		{
 			isOnTitleScreen = true;
 		}
+		if (keyIsDown(72)) //TESTING H INSTA KILL
+		{
+			finish.health = 0;
+		}
 	}
 }
 
 function mousePressed()
 {
-	if (!isOnTitleScreen)
+	if (!isOnTitleScreen && finish.health >= 0)
 	{
 		if (startGameButton.testClick())
 		{
@@ -1328,6 +1446,7 @@ function mousePressed()
 					{
 						cell.walkable = true;
 						money -= 10;
+						moneyFromBreakpoints += 10;
 						redoPaths();
 					}
 					else
@@ -1363,6 +1482,7 @@ function mousePressed()
 					}
 					else
 					{
+						moneyFromBreakpoints += 5;
 						money -= 5;
 					}
 				}
@@ -1379,6 +1499,7 @@ function mousePressed()
 					if (money >= 25)
 					{
 						cell.tower = new ConsoleLog(cell);
+						moneyFromConsoleLog += 25;
 						money -= 25;
 					}
 					else
@@ -1392,6 +1513,7 @@ function mousePressed()
 					if (money >= 50)
 					{
 						cell.tower = new Documentation(cell);
+						moneyFromDocumentation += 50;
 						money -= 50;
 					}
 					else
@@ -1405,6 +1527,7 @@ function mousePressed()
 					if (money >= 60)
 					{
 						cell.tower = new TryCatch(cell);
+						moneyFromTryCatch += 60;
 						money -= 60;
 					}
 					else
@@ -1418,6 +1541,7 @@ function mousePressed()
 					if (money >= 50)
 					{
 						cell.tower = new TestCase(cell);
+						moneyFromTestCase += 50;
 						money -= 50;
 					}
 					else
@@ -1431,6 +1555,7 @@ function mousePressed()
 					if (money >= 80)
 					{
 						cell.tower = new Comments(cell);
+						moneyFromComments += 80;
 						money -= 80;
 					}
 					else
@@ -1478,11 +1603,14 @@ function previewNextWaves()
 	textAlign(LEFT);
 	noStroke();
 
-	text("wave[" + (wave + 1) + "].contents == (" + getTypePreview(thisType) + getElementPreview(thisElement), windowWidth - 490, 70);
+	setElementColour(thisElement);
+	text("wave[" + (wave + 1) + "].contents == (" + getTypePreview(thisType) + getElementPreview(thisElement) + ");", windowWidth - 490, 70);
 
-	text("wave[" + (wave + 2) + "].contents == (" + getTypePreview(nextType) + getElementPreview(nextElement), windowWidth - 490, 110);
+	setElementColour(nextElement);
+	text("wave[" + (wave + 2) + "].contents == (" + getTypePreview(nextType) + getElementPreview(nextElement) + ");", windowWidth - 490, 110);
 
-	text("wave[" + (wave + 3) + "].contents == (" + getTypePreview(nextNextType) + getElementPreview(nextNextElement), windowWidth - 490, 150);
+	setElementColour(nextNextElement);
+	text("wave[" + (wave + 3) + "].contents == (" + getTypePreview(nextNextType) + getElementPreview(nextNextElement) + ");", windowWidth - 490, 150);
 }
 
 function getTypePreview(type)
@@ -1497,9 +1625,24 @@ function getTypePreview(type)
 		return "A Swarm of "
 	}
 
-	if (type == EnemyType.Tank)
+	return "Massive "
+}
+
+function setElementColour(element)
+{
+	if (element == Element.Syntax)
 	{
-		return "Massive "
+		fill(190,255,190);
+	}
+
+	if (element == Element.Runtime)
+	{
+		fill(255,190,190);
+	}
+
+	if (element == Element.Logic)
+	{
+		fill(190,190,255);
 	}
 }
 
@@ -1507,21 +1650,15 @@ function getElementPreview(element)
 {
 	if (element == Element.Syntax)
 	{
-		fill(190,255,190);
-		return "Syntax Errors);"
+		return "Syntax Errors"
 	}
 
 	if (element == Element.Runtime)
 	{
-		fill(255,190,190);
-		return "Runtime Errors);"
+		return "Runtime Errors"
 	}
 
-	if (element == Element.Logic)
-	{
-		fill(190,190,255);
-		return "Logic Errors);"
-	}
+	return "Logic Errors"
 }
 
 function drawMenus()
@@ -1743,7 +1880,7 @@ function spawnWave()
 			}
 			if (thisType == EnemyType.Swarm)
 			{
-				let max = (Math.sqrt(wave * 1.6 + 6) * 1.6);
+				let max = Math.sqrt(wave * 1.6 + 6) * 2;
 				if (wave < 2)
 				{
 					max *= 2;
@@ -1859,15 +1996,15 @@ function doGameLoop()
 			else
 			{
 				finish.health -= val;
+				if (finish.health <= 0)
+				{
+					finalKillElement = enemys[i].elementType;
+					finalKillType = enemys[i].enemyType;
+				}
 			}
 			enemys.splice(i, 1);
 			i--;
 		}
-	}
-
-	if (finish.health <= 0)
-	{
-		isOnTitleScreen = true;
 	}
 
 	framesUntilNextWave--;
@@ -1916,7 +2053,7 @@ function drawMouseOverDisplay()
 				stroke(0);
 				strokeWeight(4);
 
-				text("Remove: 10 kB", x, y - pixelsPerCell);
+				text("Remove: Costs 10 kB", x, y - pixelsPerCell);
 			}
 		}
 		else if (cell.tower != null)
@@ -1939,7 +2076,7 @@ function drawMouseOverDisplay()
 				stroke(0);
 				strokeWeight(4);
 
-				text("Sell: " + floor(cell.tower.cost * 0.75) + " kB", x, y - pixelsPerCell);
+				text("Sell: Refunds " + floor(cell.tower.cost * 0.75) + " kB", x, y - pixelsPerCell);
 			}
 		}
 	}
@@ -1989,4 +2126,56 @@ function doTitleScreen()
 	fill(255);
 	textSize(40);
 	text("Start!", windowWidth / 2, windowHeight / 2 + 15);
+}
+
+function drawDeathScreen()
+{
+	fill(0,0,0,180);
+	noStroke();
+	rect(0,0,windowWidth, windowHeight);
+
+	textSize(60);
+	fill(255);
+
+	textAlign(CENTER);
+	text("Your program crashed!", windowWidth / 2, 60);
+	textSize(20);
+	fill(180);
+	
+	text("You crashed on wave " + wave + "! From " + getTypePreview(finalKillType) + getElementPreview(finalKillElement) + ".", windowWidth / 2, 100);
+	text("Press ESC to return to the main menu.", windowWidth / 2, 140);
+
+	fill(255);
+	textSize(30);
+	text("Statistics:", windowWidth / 2, windowHeight / 2 - 160);
+
+	textAlign(CENTER);
+	textSize(24);
+
+	let totalDamage = round(damageFromConsoleLog + damageFromDocumentation + damageFromTryCatch + damageFromTestCase);
+	text("Total Damage Dealt: " + totalDamage, windowWidth / 3 - 50, windowHeight / 2 - 110);
+	let totalMoney = moneyFromBreakpoints + moneyFromConsoleLog + moneyFromDocumentation + moneyFromTryCatch + moneyFromTestCase + moneyFromComments;
+	text("Total Memory Spent: " + totalMoney + " kB", windowWidth / 3 - 50, windowHeight / 2 - 70);
+
+	text("Damage From Console Log: " + round(damageFromConsoleLog) + " (" + round((damageFromConsoleLog / totalDamage) * 100) + "%)", windowWidth / 3 - 50, windowHeight / 2 - 30);
+	text("Damage From Documentation: " + round(damageFromDocumentation) + " (" + round((damageFromDocumentation / totalDamage) * 100) + "%)", windowWidth / 3 - 50, windowHeight / 2 + 10);
+	text("Damage From Try Catch: " + round(damageFromTryCatch) + " (" + round((damageFromTryCatch / totalDamage) * 100) + "%)", windowWidth / 3 - 50, windowHeight / 2 + 50);
+	text("Damage From Test Case: " + round(damageFromTestCase) + " (" + round((damageFromTestCase / totalDamage) * 100) + "%)", windowWidth / 3 - 50, windowHeight / 2 + 90);
+	text("Damage From Normal Errors: " + damageTakenFromNormal, windowWidth / 3 - 50, windowHeight / 2 + 130);
+	text("Damage From Swarm Errors: " + damageTakenFromSwarm, windowWidth / 3 - 50, windowHeight / 2 + 170);
+	text("Damage From Massive Errors: " + damageTakenFromTank, windowWidth / 3 - 50, windowHeight / 2 + 210);
+
+	text("Money Spent on Breakpoints: " + moneyFromBreakpoints + " kB (" + round((moneyFromBreakpoints / totalMoney) * 100) + "%)", (windowWidth / 3) * 2 + 50, windowHeight / 2 - 110);
+	text("Money Spent on Console Log: " + moneyFromConsoleLog + " kB (" + round((moneyFromConsoleLog / totalMoney) * 100) + "%)", (windowWidth / 3) * 2 + 50, windowHeight / 2 - 70);
+	text("Money Spent on Documentation: " + moneyFromDocumentation + " kB (" + round((moneyFromDocumentation / totalMoney) * 100) + "%)", (windowWidth / 3) * 2 + 50, windowHeight / 2 - 30);
+	text("Money Spent on Try Catch: " + moneyFromTryCatch + " kB (" + round((moneyFromTryCatch / totalMoney) * 100) + "%)", (windowWidth / 3) * 2 + 50, windowHeight / 2 + 10);
+	text("Money Spent on Test Case: " + moneyFromTestCase + " kB (" + round((moneyFromTestCase / totalMoney) * 100) + "%)", (windowWidth / 3) * 2 + 50, windowHeight / 2 + 50);
+	text("Money Spent on Comments: " + moneyFromComments + " kB (" + round((moneyFromComments / totalMoney) * 100) + "%)", (windowWidth / 3) * 2 + 50, windowHeight / 2 + 90);
+	text("Damage From Logic Errors: " + damageTakenFromLogic, (windowWidth / 3) * 2 + 50, windowHeight / 2 + 130);
+	text("Damage From Syntax Errors: " + damageTakenFromSyntax, (windowWidth / 3) * 2 + 50, windowHeight / 2 + 170);
+	text("Damage From Runtime Errors: " + damageTakenFromRuntime, (windowWidth / 3) * 2 + 50, windowHeight / 2 + 210);
+
+	stroke(0);
+	strokeWeight(8);
+	text("Press ESC to return to the main menu.", windowWidth / 2, windowHeight - 30);
 }
