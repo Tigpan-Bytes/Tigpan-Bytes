@@ -822,7 +822,7 @@ class TryCatch extends Tower
 
 		this.maxTimer = 300;
 		this.range = tryCatchRange;
-		this.damage = 40;
+		this.damage = 45;
 		this.firedTime = 0;
 		this.firedX = 0;
 		this.firedY = 0;
