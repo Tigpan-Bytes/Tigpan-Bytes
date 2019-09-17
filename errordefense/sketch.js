@@ -917,7 +917,7 @@ class TestCase extends Tower
 	{
 		super(cell, 50);
 
-		this.maxTimer = 70;
+		this.maxTimer = 80;
 		this.range = testCaseRange;
 		this.damage = 7;
 		this.firedTime = 0;
@@ -932,7 +932,7 @@ class TestCase extends Tower
 		this.increaseUpgradeCost();
 		this.damage *= 2.1;
 		this.range += 0.15;
-		this.maxTimer -= (this.maxTimer - 46) * 0.2;
+		this.maxTimer -= (this.maxTimer - 50) * 0.2;
 	}
 
 	update()
