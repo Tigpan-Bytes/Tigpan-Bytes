@@ -1052,8 +1052,8 @@ class Comments extends Tower
 					if (allEnemys[i].slow > this.slow)
 					{
 						allEnemys[i].slow = this.slow;
+						allEnemys[i].slowTimer = 15;
 					}
-					allEnemys[i].slowTimer = 15;
 				}
 
 				ellipse(this.cell.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, 
