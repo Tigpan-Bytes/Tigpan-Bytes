@@ -820,9 +820,9 @@ class TryCatch extends Tower
 	{
 		super(cell, 60);
 
-		this.maxTimer = 290;
+		this.maxTimer = 300;
 		this.range = tryCatchRange;
-		this.damage = 45;
+		this.damage = 55;
 		this.firedTime = 0;
 		this.firedX = 0;
 		this.firedY = 0;
@@ -834,7 +834,7 @@ class TryCatch extends Tower
 		this.increaseUpgradeCost();
 		this.damage *= 1.75;
 		this.range += 0.4;
-		this.maxTimer -= (this.maxTimer - 220) * 0.2;
+		this.maxTimer -= (this.maxTimer - 230) * 0.2;
 	}
 
 	update()
