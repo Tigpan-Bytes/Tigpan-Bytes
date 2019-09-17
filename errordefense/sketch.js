@@ -1379,10 +1379,6 @@ function draw()
 		{
 			isOnTitleScreen = true;
 		}
-		if (keyIsDown(72)) //TESTING H INSTA KILL
-		{
-			finish.health = 0;
-		}
 	}
 }
 
