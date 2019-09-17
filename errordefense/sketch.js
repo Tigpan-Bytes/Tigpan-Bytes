@@ -1561,9 +1561,14 @@ function mousePressed()
 					}
 				}
 			}
-			else
+			else if (!cell.buildable || cell.tower != null)
 			{
 				failText = "Can only build on an empty breakpoint.";
+				failTimer = 120;
+			}
+			else
+			{
+				failText = "Select a debugger to place.";
 				failTimer = 120;
 			}
 		}
