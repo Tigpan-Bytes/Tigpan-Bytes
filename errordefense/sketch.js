@@ -614,7 +614,7 @@ class ConsoleLog extends Tower
 
 		this.maxTimer = 40;
 		this.range = consoleLogRange;
-		this.damage = 10;
+		this.damage = 9;
 	}
 
 	upgrade()
@@ -822,7 +822,7 @@ class TryCatch extends Tower
 
 		this.maxTimer = 300;
 		this.range = tryCatchRange;
-		this.damage = 55;
+		this.damage = 60;
 		this.firedTime = 0;
 		this.firedX = 0;
 		this.firedY = 0;
