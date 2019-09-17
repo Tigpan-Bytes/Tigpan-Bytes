@@ -1983,15 +1983,16 @@ function doGameLoop()
 			{
 				if (enemys[i].enemyType == EnemyType.Normal)
 				{
-					money += floor(5 * (wave / 18 + 1.2));
+					//money += floor(5 * (wave / 18 + 1.2));
+					money += floor(5 * (Math.log(wave + 50) * 30 - 45));
 				}
 				else if (enemys[i].enemyType == EnemyType.Swarm)
 				{
-					money += floor(wave / 18 + 1.2);
+					money += floor((Math.log(wave + 50) * 30 - 45));
 				}
 				else if (enemys[i].enemyType == EnemyType.Tank)
 				{
-					money += floor(17 * (wave / 18 + 1.2));
+					money += floor(17 * (Math.log(wave + 50) * 30 - 45));
 				}
 			}
 			else
