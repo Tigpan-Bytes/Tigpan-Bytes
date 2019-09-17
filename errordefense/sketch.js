@@ -919,7 +919,7 @@ class TestCase extends Tower
 
 		this.maxTimer = 70;
 		this.range = testCaseRange;
-		this.damage = 6;
+		this.damage = 7;
 		this.firedTime = 0;
 
 		this.yHeight = Math.sqrt(3) * (pixelsPerCell - 4) / 4;
