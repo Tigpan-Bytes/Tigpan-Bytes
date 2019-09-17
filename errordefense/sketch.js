@@ -1994,7 +1994,7 @@ function doGameLoop()
 				}
 				else if (enemys[i].enemyType == EnemyType.Tank)
 				{
-					money += floor(17 * (Math.log10(wave + 50) * 30 - 45));
+					money += floor(3.4 * (Math.log10(wave + 50) * 30 - 45));
 				}
 			}
 			else
