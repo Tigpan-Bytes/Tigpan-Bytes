@@ -397,7 +397,7 @@ class Enemy
 		this.x = cell.x;
 		this.y = cell.y;
 
-		this.health = (enemyType == EnemyType.Normal ? 22 : (enemyType == EnemyType.Swarm ? 7 : 100));
+		this.health = (enemyType == EnemyType.Normal ? 22 : (enemyType == EnemyType.Swarm ? 6 : 100));
 		this.health *= Math.pow((wave * 0.1) + 1, 2);
 		this.maxHealth = this.health;
 	}
