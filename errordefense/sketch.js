@@ -621,7 +621,7 @@ class ConsoleLog extends Tower
 	{
 		moneyFromConsoleLog += this.upgradeCost;
 		this.increaseUpgradeCost();
-		this.damage *= 1.75;
+		this.damage *= 1.9;
 		this.range += 0.35;
 		this.maxTimer -= (this.maxTimer - 30) * 0.2;
 	}
@@ -700,7 +700,7 @@ class Documentation extends Tower
 	{
 		moneyFromDocumentation += this.upgradeCost;
 		this.increaseUpgradeCost();
-		this.damage *= 1.9;
+		this.damage *= 2.1;
 		this.range += 0.2;
 	}
 
@@ -832,7 +832,7 @@ class TryCatch extends Tower
 	{
 		moneyFromTryCatch += this.upgradeCost;
 		this.increaseUpgradeCost();
-		this.damage *= 1.75;
+		this.damage *= 1.9;
 		this.range += 0.4;
 		this.maxTimer -= (this.maxTimer - 230) * 0.2;
 	}
@@ -930,7 +930,7 @@ class TestCase extends Tower
 	{
 		moneyFromTestCase += this.upgradeCost;
 		this.increaseUpgradeCost();
-		this.damage *= 1.75;
+		this.damage *= 1.9;
 		this.range += 0.15;
 		this.maxTimer -= (this.maxTimer - 46) * 0.2;
 	}
