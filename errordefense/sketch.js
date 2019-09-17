@@ -389,7 +389,7 @@ class Enemy
 		this.cell = cell;
 		this.wave = wave;
 
-		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.035 : 0.015));
+		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.04 : 0.015));
 		this.speed *= 1 + Math.sqrt((wave + 3) / 10);
 		this.slow = 1;
 		this.slowTimer = 0;
@@ -397,7 +397,7 @@ class Enemy
 		this.x = cell.x;
 		this.y = cell.y;
 
-		this.health = (enemyType == EnemyType.Normal ? 20 : (enemyType == EnemyType.Swarm ? 7 : 100));
+		this.health = (enemyType == EnemyType.Normal ? 22 : (enemyType == EnemyType.Swarm ? 7 : 100));
 		this.health *= Math.pow((wave * 0.125) + 1, 2);
 		this.maxHealth = this.health;
 	}
