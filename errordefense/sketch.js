@@ -27,9 +27,9 @@ class Tile
 		this.west;
 
 		this.nextOnPath = null;
-		this.distance = 5318008; //boobs
+		this.distance = 5318008;
 		this.psuedoNextOnPath = null;
-		this.psuedoDistance = 5318008; //boobs
+		this.psuedoDistance = 5318008;
 	}
 
 	resetPath()
@@ -390,15 +390,22 @@ class Enemy
 		this.wave = wave;
 
 		this.speed = (enemyType == EnemyType.Normal ? 0.025 : (enemyType == EnemyType.Swarm ? 0.04 : 0.015));
-		this.speed *= 1 + Math.sqrt((wave + 3) / 10);
+		this.speed *= 1 + Math.sqrt((wave + 3) / 12);
 		this.slow = 1;
 		this.slowTimer = 0;
 
 		this.x = cell.x;
 		this.y = cell.y;
 
-		this.health = (enemyType == EnemyType.Normal ? 22 : (enemyType == EnemyType.Swarm ? 6 : 100));
-		this.health *= Math.pow((wave * 0.12) + 1, 2);
+		this.health = (enemyType == EnemyType.Normal ? 22 : (enemyType == EnemyType.Swarm ? 6 : 90));
+		if (wave < 10)
+		{
+			this.health *= Math.pow((wave * 0.04) + 1, 2);
+		}
+		else
+		{
+			this.health *= Math.pow(((wave - 10) * 0.1), 2) + Math.pow((wave * 0.04) + 1, 2);
+		}
 		this.maxHealth = this.health;
 	}
 
