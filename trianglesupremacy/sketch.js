@@ -13,7 +13,7 @@ function Vector2(x, y) {
 	this.y = y;
 }
 
-//lets you 
+//adds a set of functions to that variable type
 Vector2.prototype = {
 	add: function(vector) {
 		return new Vector2(this.x + vector.x, this.y + vector.y);
@@ -75,7 +75,7 @@ Vector2.prototype = {
 	}
 }
 
-class Enemy
+class Enemy // a class for enemies which all other enemies are subclassed from
 {
 	constructor(position, player, radius, health, damage)
 	{
@@ -374,6 +374,7 @@ class ECross extends Enemy //bounces off the walls erratically and shoots when h
 
 	move()
 	{
+		//if it hits a wall change direction and shoot
 		if (this.position.x < 0)
 		{
 			this.velocity.x = random(1);
@@ -520,7 +521,7 @@ class EDiamond extends Enemy //lots of health that moves toward the player quick
 	}
 }
 
-class Projectile
+class Projectile // A projectile used by the enemys and player
 {
 	constructor(position, velocity, radius, fill, stroke, strokeSize, damage)
 	{
@@ -564,7 +565,7 @@ class Player
 		this.shootFrames = 0;
 	}
 
-	collides(point, extra)
+	collides(point, extra) // if it collides with anything
 	{
 		return this.position.distance(point) <= this.radius + extra;
 	}
@@ -579,6 +580,7 @@ class Player
 	{
 		this.shootFrames++;
 
+		//30 frame timer per shot
 		if (this.shootFrames > 30 && mouseIsPressed)
 		{
 			this.shootFrames = 0;
@@ -592,6 +594,7 @@ class Player
 	
 	move()
 	{
+		//moves to point towards the mouse
 		this.rotation = new Vector2(mouseX, mouseY).subtract(this.position);
 		this.rotation.normalize();
 
@@ -615,6 +618,7 @@ class Player
 			this.velocity.x -= 1;
 		}
 
+		//hit the wall
 		if (this.position.x < 0 && this.velocity.x < 0)
 		{
 			this.velocity.x = 0;
@@ -704,6 +708,7 @@ function startGame()
 
 function spawnWave()
 {
+	//spawns a wave of increasing size with different enemy types and more enemies
 	wave++;
 	if (wave > biggestWave)
 	{
@@ -744,6 +749,7 @@ function spawnWave()
 
 function getSpawn()
 {
+	//gets a placement for an enemy spawn
 	return (spawnSide ? new Vector2(random(windowWidth * 0.8, windowWidth), random(0, windowHeight)) : new Vector2(random(0, windowWidth * 0.2), random(0, windowHeight))); 
 }
 
@@ -762,17 +768,20 @@ function drawGame()
 		rect(0, 0, 20, windowHeight);
 	}
 
+	//GUI
 	textAlign(LEFT);
 	textSize(30);
 	fill(255);
 	text("Wave: " + wave, 10, 30);
 	text("Health: " + player.health, 10, 70);
 
+	//check death and return to title
 	if (player.health <= 0)
 	{
 		gameRunning = false;
 	}
 
+	//update everything
 	player.update();
 
 	for (let i = 0; i < playerProjectiles.length; i++)
@@ -781,6 +790,7 @@ function drawGame()
 		playerProjectiles[i].render();
 		for (let e = 0; e < enemys.length; e++)
 		{
+			//if player projectile contacts an enemy remove it and damage the enemy
 			if (enemys[e].collides(playerProjectiles[i].position, playerProjectiles[i].radius))
 			{
 				if (enemys[e].attack(playerProjectiles[i].damage))
@@ -795,8 +805,10 @@ function drawGame()
 		}
 	}
 
+	//draw
 	player.render();
 
+	//If the enemy contacts the player (update function) hurt the player and remove the enemy
 	for (let i = 0; i < enemys.length; i++)
 	{
 		if (enemys[i].update())
@@ -811,6 +823,7 @@ function drawGame()
 		}
 	}
 
+	//check for contact on enemy projectiles
 	for (let i = 0; i < enemyProjectiles.length; i++)
 	{
 		enemyProjectiles[i].update();
@@ -825,6 +838,7 @@ function drawGame()
 		}
 	}
 
+	//if enemys are low enough spawn the wave
 	if (enemys.length <= wave * 2 + 2)
 	{
 		spawnWave();
