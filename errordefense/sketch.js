@@ -1174,6 +1174,7 @@ function setup()
 
 function startGame()
 {
+	//resets all variables
 	isOnTitleScreen = false;
 	money = 300;
 	wave = -1;
@@ -1281,7 +1282,7 @@ function startGame()
 	} while (!redoPaths())
 }
 
-function redoPaths() //returns true if you can't find a path from all the spawners
+function redoPaths() //returns true if you can't find a path from all the spawners or all the enemys
 {
 	queue = new Array();
 
@@ -1295,7 +1296,7 @@ function redoPaths() //returns true if you can't find a path from all the spawne
 
 	finish.psuedoDistance = 0;
 
-	queue.push(finish);
+	queue.push(finish); //adds tiles to the queue
 	while (queue.length > 0) 
 	{
 		next = queue.shift();
@@ -1371,7 +1372,8 @@ function draw()
 		render();
 		
 		if (finish.health > 0)
-		{
+		{ 
+			//only do main game loop if you are not dead and not paused
 			if (startGameButton.active)
 			{
 				doGameLoop();
@@ -1393,6 +1395,7 @@ function mousePressed()
 {
 	if (!isOnTitleScreen && finish.health >= 0)
 	{
+		//detects clicks for buttons
 		if (startGameButton.testClick())
 		{
 			startGameButton.active = !startGameButton.active;
@@ -1434,6 +1437,7 @@ function mousePressed()
 		let x = floor((mouseX - 0.5 - leftBarWidth - colSpace) / pixelsPerCell);
 		let y = floor((mouseY - 0.5 - rowSpace) / pixelsPerCell);
 		let cell = getCell(x, y);
+		//attempts to upgrade/sell or give failure text
 		if (cell != null)
 		{
 			if (deleteButton.active)
@@ -1584,6 +1588,7 @@ function mousePressed()
 
 function activateButton(button)
 {
+	//deactivates all the buttons expect for the parameter
 	let bState = button.active;
 	
 	deleteButton.active = false;
@@ -1603,6 +1608,7 @@ function activateButton(button)
 
 function previewNextWaves()
 {
+	//displays the next waves preview
 	fill(30, 30, 30, 150);
 	stroke(90, 140, 170);
 	strokeWeight(2);
@@ -1623,6 +1629,7 @@ function previewNextWaves()
 
 function getTypePreview(type)
 {
+	//type prefix
 	if (type == EnemyType.Normal)
 	{
 		return "Normal "
@@ -1638,6 +1645,7 @@ function getTypePreview(type)
 
 function setElementColour(element)
 {
+	//element colour
 	if (element == Element.Syntax)
 	{
 		fill(190,255,190);
@@ -1656,6 +1664,7 @@ function setElementColour(element)
 
 function getElementPreview(element)
 {
+	//element enemy sufix
 	if (element == Element.Syntax)
 	{
 		return "Syntax Errors"
@@ -1700,6 +1709,7 @@ function drawMenus()
 
 	let size = leftBarWidth / 2 - 30;
 
+	//renders buttons
 	deleteButton.render(0);
 	upgradeButton.render(1);
 
@@ -1712,9 +1722,11 @@ function drawMenus()
 	testCaseButton.render(6);
 	commentsButton.render(7);
 
+	//draws the text for the tower buttons
 	textSize(26);
 	drawTowerText(size * 4);
 
+	//bottom bar
 	textSize(32);
 	textAlign(LEFT);
 	fill(255);
@@ -1728,6 +1740,7 @@ function drawMenus()
 
 function drawTowerText(size)
 {
+	//what text to display for the tower buttons
 	if (deleteButton.active)
 	{
 		showTowerTopText("Delete", "Refunds 75% of the memory spent on a debugger, but costs 10 kB to remove a breakpoint.", -1, 4, size);
@@ -1800,6 +1813,7 @@ function render()
 	noStroke();
 	fill(30,40,40);
 
+	//draws all the individual cells
 	for (let i = 0; i < spawners.length; i++)
 	{
 		let cell = spawners[i].nextOnPath;
@@ -1813,6 +1827,7 @@ function render()
 	stroke(60, 100, 130);
 	strokeWeight(0.5);
 
+	//adds the towers to a render queue so they can be drawn last
 	let towerRenderQueue = new Array();
 	for (let x = 0; x < cols; x++)
 	{
@@ -1822,18 +1837,22 @@ function render()
 		}
 	}
 
+	//draws the end
 	finish.render(true);
 
+	//draws the spawners
 	for (let i = 0; i < spawners.length; i++)
 	{
 		spawners[i].render(true);
 	}
 
+	//draws enemys
 	for (let i = 0; i < enemys.length; i++)
 	{
 		enemys[i].render();
 	}
 
+	//draws the render queue for towers
 	for (let i = 0; i < towerRenderQueue.length; i++)
 	{
 		if (towerRenderQueue[i] != undefined)
@@ -1846,6 +1865,7 @@ function render()
 
 	drawMouseOverDisplay();
 
+	//draws the text upon doing an invalid action
 	if (failTimer > 0)
 	{
 		textSize(24);
@@ -1861,6 +1881,8 @@ function render()
 
 function spawnWave()
 {
+	//depending on the current wave spawns enemy types
+	//from different amounts of spawners
 	for (let i = 0; i < spawners.length; i++)
 	{
 		if (spawners[i].timeUntilActive <= 0)
@@ -1935,6 +1957,7 @@ function spawnWave()
 		}
 	}
 
+	//assigns the next types and elements for enemys
 	thisElement = nextElement;
 	thisType = nextType;
 
@@ -1945,6 +1968,7 @@ function spawnWave()
 	let e = floor(random(0, 3));
 	nextNextElement = (e == nextElement ? floor(random(0, 3)) : e);
 
+	//forces swarms on waves of multiple 5 and tank on multiple 10
 	if (((wave + 4) % 10) == 5)
 	{
 		nextNextType = EnemyType.Swarm;
@@ -1958,6 +1982,7 @@ function spawnWave()
 		nextNextType = (((wave + 4) % 2) == 0 ? EnemyType.Normal : floor(random(0, 3)));
 	}
 
+	//a new wave spawns if 1100 frames go by (60 fps) or all enemys are dead
 	framesUntilNextWave = 1100;
 	wave++;
 	if (biggestWave < wave)
@@ -1968,11 +1993,13 @@ function spawnWave()
 
 function doGameLoop()
 {
+	//a new wave spawns if 1100 frames go by (60 fps) or all enemys are dead
 	if ((framesUntilNextWave == 0 || enemys.length == 0) && spawners[0].enemys.length == 0 && spawners[1].enemys.length == 0 && spawners[2].enemys.length == 0 && spawners[3].enemys.length == 0)
 	{
 		spawnWave();
 	}
 
+	//updates the cells which also updates towers
 	for (let x = 0; x < cols; x++)
 	{
 		for (let y = 0; y < rows; y++)
@@ -1981,8 +2008,7 @@ function doGameLoop()
 		}
 	}
 
-	print(Math.log10(5));
-
+	//updates enemys and gives money if they are killed based on the current wave
 	for (let i = 0; i < enemys.length; i++)
 	{
 		let val = enemys[i].update();
@@ -1992,7 +2018,6 @@ function doGameLoop()
 			{
 				if (enemys[i].enemyType == EnemyType.Normal)
 				{
-					//money += floor(5 * (wave / 18 + 1.2));
 					money += floor((Math.log10(wave + 50) * 30 - 45));
 				}
 				else if (enemys[i].enemyType == EnemyType.Swarm)
@@ -2006,6 +2031,7 @@ function doGameLoop()
 			}
 			else
 			{
+				//if you die
 				finish.health -= val;
 				if (finish.health <= 0)
 				{
@@ -2013,7 +2039,7 @@ function doGameLoop()
 					finalKillType = enemys[i].enemyType;
 				}
 			}
-			enemys.splice(i, 1);
+			enemys.splice(i, 1); //removes a dead enemy from the list
 			i--;
 		}
 	}
@@ -2023,6 +2049,7 @@ function doGameLoop()
 
 function drawMouseOverDisplay()
 {
+	//draws the range of towers and costs/sell/upgrades prices
 	let x = floor((mouseX - 0.5 - leftBarWidth - colSpace) / pixelsPerCell);
 	let y = floor((mouseY - 0.5 - rowSpace) / pixelsPerCell);
 	let cell = getCell(x, y);
@@ -2141,6 +2168,7 @@ function doTitleScreen()
 
 function drawDeathScreen()
 {
+	//draws the you failed screen with statistics
 	fill(0,0,0,180);
 	noStroke();
 	rect(0,0,windowWidth, windowHeight);
