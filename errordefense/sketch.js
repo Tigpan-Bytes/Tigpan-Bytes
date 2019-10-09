@@ -3,12 +3,12 @@
 // Thursday 12th September, 2019
 //
 // Extra for Experts:
-// - 2100+ lines
+// - 2200+ lines
 // - Polymorphism and inheritance
 // - Tons of arrays
-// - 2100+ lines
+// - 2200+ lines
 // - Reactive Pathfinding
-// - Did I mention 2100+ lines?
+// - Did I mention 2200+ lines?
 
 class Tile
 {
@@ -26,6 +26,10 @@ class Tile
 		this.east;
 		this.west;
 
+		//there are values for the path, and the next possible path (psuedo)
+		//this is because it attempts to create a new path using psuedo
+		//then tests if it is a valid path
+		//if it is a valid path, then it pushes it into the real path
 		this.nextOnPath = null;
 		this.distance = 5318008;
 		this.psuedoNextOnPath = null;
@@ -45,7 +49,9 @@ class Tile
 
 	nextPathGen(next)
 	{
-		if (!this.foundPath() || next == null || next.foundPath() || !next.walkable) {
+		// returns and sets values for the next tile in the pathfinding sequence
+		if (!this.foundPath() || next == null || next.foundPath() || !next.walkable) 
+		{
 			return null;
 		}
 		next.psuedoDistance = this.psuedoDistance + 1
@@ -60,6 +66,7 @@ class Tile
 
 	assignPath()
 	{
+		//assigns the path
 		this.distance = this.psuedoDistance;
 		this.nextOnPath = this.psuedoNextOnPath;
 	}
@@ -81,7 +88,9 @@ class Tile
 	}
 
 	render(force) // returns a tower to be added to the tower render queue
-	{
+	{ 
+		//if force is true it will render finish and spawner tiles,
+		//if force is false it will not
 		stroke(60, 100, 130);
 		strokeWeight(0.5);
 
@@ -103,7 +112,7 @@ class Tile
 	}
 }
 
-class FinishTile extends Tile
+class FinishTile extends Tile // the end/home tile
 {
 	constructor(x, y, walkable, buildable)
 	{
@@ -117,6 +126,7 @@ class FinishTile extends Tile
 	{
 		if (force)
 		{
+			//renders the tile and the rotating lines
 			this.animationTimer += 0.01;
 
 			fill(60, 100, 100);
@@ -141,7 +151,7 @@ class FinishTile extends Tile
 	}
 }
 
-class SpawnerTile extends Tile
+class SpawnerTile extends Tile // the tile that spawns enemys
 {
 	constructor(x, y, walkable, buildable, timeUntilActive)
 	{
@@ -158,6 +168,7 @@ class SpawnerTile extends Tile
 		{
 			if (this.timeUntilActive <= 0)
 			{
+				//if it is active as a spawner let it pulsate colors
 				fill(random(60, 80), random(0, 25), random(0, 25));
 				stroke(255, 0, 0);
 				strokeWeight(1);
@@ -182,6 +193,7 @@ class SpawnerTile extends Tile
 
 	update()
 	{
+		//has a timer for when to spawn the next enemy
 		this.enemyTimer--;
 		if (this.enemyTimer <= 0 && this.enemys.length > 0)
 		{
