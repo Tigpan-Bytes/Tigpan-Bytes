@@ -29,7 +29,7 @@ class Tile
 		//there are values for the path, and the next possible path (psuedo)
 		//this is because it attempts to create a new path using psuedo
 		//then tests if it is a valid path
-		//if it is a valid path, then it pushes it into the real path
+		//if it is a valid path, then it pushes it into the real path variables
 		this.nextOnPath = null;
 		this.distance = 5318008;
 		this.psuedoNextOnPath = null;
@@ -38,12 +38,14 @@ class Tile
 
 	resetPath()
 	{
+		//resets the pseudo values
 		this.psuedoDistance = 5318008;
 		this.psuedoNextOnPath = null;
 	}
 
 	foundPath()
 	{
+		//checks if a potential path is found to this tile
 		return (this.psuedoDistance != 5318008);
 	}
 
@@ -186,6 +188,7 @@ class SpawnerTile extends Tile // the tile that spawns enemys
 				rect(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace, this.y * pixelsPerCell + 0.5 + rowSpace, pixelsPerCell - 1, pixelsPerCell - 1);
 				fill(255, 0, 0);
 				noStroke();
+				//display the waves until active text
 				text(this.timeUntilActive, this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 2, this.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 2 + 3);
 			}
 		}
@@ -207,6 +210,7 @@ class SpawnerTile extends Tile // the tile that spawns enemys
 			//add it to the global enemy array
 			enemys.push(newEnemy);
 
+			//timers until the next enemy spawns
 			if (newEnemy.enemyType == EnemyType.Normal)
 			{
 				this.enemyTimer = 40 * summonMod + random(0, 3);
@@ -225,6 +229,7 @@ class SpawnerTile extends Tile // the tile that spawns enemys
 
 class TowerButton
 {
+	//A generic square button used for the pause/play button and all tower buttons
 	constructor(x, y, size)
 	{
 		this.x = x;
@@ -375,7 +380,7 @@ class TowerButton
 
 	testClick()
 	{
-
+		//returns true if the mouse is inside
 		return mouseX >= this.x && mouseY >= this.y && mouseX <= this.x + this.size && mouseY <= this.y + this.size;
 	}
 }
@@ -388,7 +393,7 @@ const Element = {
 
 const EnemyType = {
 	Normal: 0, // square
-	Swarm: 1, // tiny circle, no stroke
+	Swarm: 1, // tiny circle, small stroke
 	Tank: 2 // Big circle, big stroke
 };
 
@@ -431,7 +436,7 @@ class Enemy
 		return this.cell.psuedoNextOnPath != null;
 	}
 
-	update() // returns a number if it reaches the end, or -1 if is dead
+	update() // returns a number based on the amount of damage to the end if it reaches the end, or -1 if is dead
 	{
 		this.slowTimer--;
 		if (this.slowTimer <= 0)
@@ -444,6 +449,7 @@ class Enemy
 			return -1;
 		}
 
+		//move x
 		let xDisplace = Math.sign(this.cell.nextOnPath.x - this.x) * this.speed * this.slow;
 		if (this.speed * this.slow > abs(this.cell.nextOnPath.x - this.x))
 		{
@@ -454,6 +460,7 @@ class Enemy
 			this.x += xDisplace;
 		}
 
+		//move y
 		let yDisplace = Math.sign(this.cell.nextOnPath.y - this.y) * this.speed * this.slow;
 		if (this.speed * this.slow > abs(this.cell.nextOnPath.y - this.y))
 		{
@@ -464,11 +471,13 @@ class Enemy
 			this.y += yDisplace;
 		}
 
+		//check if it reached the cell
 		if (Math.abs(this.x - this.cell.nextOnPath.x) <= this.speed * this.slow * 1.5 && Math.abs(this.y - this.cell.nextOnPath.y) <= this.speed * this.slow * 1.5)
 		{
 			this.cell = this.cell.nextOnPath;
 		}
 
+		//if it reached the end
 		if (this.cell == finish)
 		{
 			//stops drones from continuing to latch
@@ -530,6 +539,7 @@ class Enemy
 
 	render()
 	{
+		//colours the enemy based on element/error type
 		if (this.elementType == Element.Syntax)
 		{
 			fill(110, 220, 110);
@@ -546,9 +556,10 @@ class Enemy
 			stroke(0,0,255);
 		}
 
+		//draws the shape
 		if (this.enemyType == EnemyType.Normal)
 		{
-			strokeWeight(1);
+			strokeWeight(2);
 
 			rect(this.x * pixelsPerCell + 0.5 + leftBarWidth + colSpace + pixelsPerCell / 4, 
 				this.y * pixelsPerCell + 0.5 + rowSpace + pixelsPerCell / 4, 
@@ -585,6 +596,7 @@ class Enemy
 
 class Tower
 {
+	//tower parent class
 	constructor(cell, cost)
 	{
 		this.cell = cell;
@@ -627,6 +639,7 @@ const consoleLogRange = 3.5;
 
 class ConsoleLog extends Tower
 {
+	//generic "laser" tower, medium of every stat
 	constructor(cell)
 	{
 		super(cell, 25);
@@ -647,6 +660,7 @@ class ConsoleLog extends Tower
 
 	update()
 	{
+		//shoots enemy furthest down path that is in range
 		this.timer--;
 		if (this.timer <= 0)
 		{
@@ -699,6 +713,7 @@ const documentationRange = 1.75;
 
 class Documentation extends Tower
 {
+	//latches drones onto enemys that deal damage until it dies
 	constructor(cell)
 	{
 		super(cell, 50);
@@ -835,6 +850,7 @@ const tryCatchRange = 9;
 
 class TryCatch extends Tower
 {
+	//sniper tower
 	constructor(cell)
 	{
 		super(cell, 60);
@@ -932,6 +948,7 @@ const testCaseRange = 2;
 
 class TestCase extends Tower
 {
+	//AOE tower
 	constructor(cell)
 	{
 		super(cell, 50);
@@ -1025,7 +1042,8 @@ class TestCase extends Tower
 const commentsRange = 2.5;
 
 class Comments extends Tower
-{
+{ 
+	//slow tower
 	constructor(cell)
 	{
 		super(cell, 80);
