@@ -1180,6 +1180,7 @@ let damageTakenFromNormal;
 let damageTakenFromSwarm;
 let damageTakenFromTank;
 
+//what was the last enemy that killed you
 let finalKillElement;
 let finalKillType;
 
