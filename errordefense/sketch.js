@@ -1159,6 +1159,7 @@ let isOnTitleScreen = true;
 let failText = "";
 let failTimer = 0;
 
+//used for end screen statistics
 let damageFromConsoleLog;
 let damageFromDocumentation;
 let damageFromTryCatch;
