@@ -10,6 +10,11 @@
 // - Reactive Pathfinding
 // - Did I mention 2200+ lines?
 
+// States:
+// There are many state variables, two variables of note are:
+// isOnTitleScreen - Stores if the player is on the title screen or not
+// startGameButton.active - Stores wether the game is paused or not
+
 class Tile
 {
 	constructor(x, y, walkable, buildable)
