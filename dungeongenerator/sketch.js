@@ -102,6 +102,15 @@ class MazeCell
 
 class VertexMazeCell extends MazeCell
 {
+	// A subclass of maze cell only existing the cells at every odd position. Example:
+	// [ ][ ][ ][ ][ ]
+	// [ ][X][ ][X][ ]
+	// [ ][ ][ ][ ][ ]
+	// [ ][X][ ][X][ ]
+	// [ ][ ][ ][ ][ ]
+
+	//this is needed because the rooms and mazes can only start and end at these locations
+
 	constructor(x, y) 
 	{
 		super(x, y);
@@ -236,6 +245,9 @@ let cheater = false;
 
 let playerX;
 let playerY;
+
+let startCellVisible = false;
+let endCellVisible = false;
 
 function get2dArray(cols, rows)
 {
@@ -938,6 +950,29 @@ function getCell(x, y)
 	return null;
 }
 
+function castSight(x, y, xP, yP)
+{
+	//Line of sight, its not pretty but its fast and it works well
+	do 
+	{
+		let cell = getCell(x - yP, y - xP); //renders left side of sight
+		startCellVisible = cell.isStart || startCellVisible;
+		endCellVisible = cell.isEnd || endCellVisible;
+		cell.render(playerX, playerY);
+		cell = getCell(x, y); //renders middle of sight
+		startCellVisible = cell.isStart || startCellVisible;
+		endCellVisible = cell.isEnd || endCellVisible;
+		cell.render(playerX, playerY);
+		cell = getCell(x + yP, y + xP); //renders right side of sight
+		startCellVisible = cell.isStart || startCellVisible;
+		endCellVisible = cell.isEnd || endCellVisible;
+		cell.render(playerX, playerY);
+
+		x += xP;
+		y += yP;
+	} while (isTileWalkable(x - xP, y - yP))
+}
+
 function render() // renders the dungeon
 {
 	if (cheater)
@@ -961,93 +996,21 @@ function render() // renders the dungeon
 	}
 	*/
 
-	//Line of sight, its not pretty but its fast and it works well
-	let startCellVisible = false;
-	let endCellVisible = false;
+	startCellVisible = false;
+	endCellVisible = false;
+
 
 	//cast y++
-	let x = playerX;
-	let y = playerY;
-	do 
-	{
-		let cell = getCell(x - 1, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x + 1, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-
-		y++;
-	} while (isTileWalkable(x, y - 1))
+	castSight(playerX, playerY, 0, 1);
 
 	//cast y--
-	x = playerX;
-	y = playerY;
-	do 
-	{
-		let cell = getCell(x - 1, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x + 1, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-
-		y--;
-	} while (isTileWalkable(x,y + 1))
+	castSight(playerX, playerY, 0, -1);
 
 	//cast x++
-	x = playerX;
-	y = playerY;
-	do 
-	{
-		let cell = getCell(x, y - 1);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y + 1);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-
-		x++;
-	} while (isTileWalkable(x - 1,y))
+	castSight(playerX, playerY, 1, 0);
 
 	//cast x--
-	x = playerX;
-	y = playerY;
-	do 
-	{
-		let cell = getCell(x, y - 1);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-		cell = getCell(x, y + 1);
-		startCellVisible = cell.isStart || startCellVisible;
-		endCellVisible = cell.isEnd || endCellVisible;
-		cell.render(playerX, playerY);
-
-		x--;
-	} while (isTileWalkable(x + 1,y))
+	castSight(playerX, playerY, -1, 0);
 
 	//renders the room the player is in
 	for (let i = 0; i < rooms.length; i++)
