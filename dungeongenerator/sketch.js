@@ -438,7 +438,7 @@ function draw() // draws only the gui when the dungeon isn't generated
 			{
 				vertexRows = 7;
 				vertexCols = 7;
-				roomAttempts = 20;
+				roomAttempts = 30;
 				roomMinSize = 1;
 				roomMaxSize = 2;
 				pixelsPerCell = 28;
@@ -1196,9 +1196,9 @@ function drawPlayerInstructions()
 	textAlign(LEFT, BOTTOM);
 	fill(255);
 	noStroke();
-	text('Arrows or WASD to move.', 4, windowHeight - 24 - 24);
-	text('Space to place a marker.', 4, windowHeight - 24);
-	text('J to cheat and view the whole dungeon. R to reset. G to regenerate.', 4, windowHeight);
+	text('Arrows or WASD to move.', 4, windowHeight - 24 - 24 - 4);
+	text('Space to place a marker.', 4, windowHeight - 24 - 4);
+	text('J to cheat and view the whole dungeon. R to reset. G to regenerate.', -4, windowHeight);
 }
 
 function renderAll()
