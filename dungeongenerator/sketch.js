@@ -3,10 +3,17 @@
 // Thursday 6th September, 2019
 //
 // Extra for Experts:
-// - more complicated than expected of cs30 because it deals with classes, inheritance, and enumerators
+// - more complicated than expected of cs30 because it deals with inheritance and enumerators
 // - Also its just pretty darn complicated period.
 // - You have to place rooms, then fill everything in with a maze, then connect the seperate regions, the erase dead ends
 // - Polymorphism
+
+//the maze algoritim works like this
+//1. pick a cell to be patient zero
+//2. move along available edges placing cells and add every cell to a list
+//3. if the cell has no more edges to initilize then remove it from the list
+//4. if the front item in the list was removed then use the next
+//5. quit when there are no more cells in the list
 
 const Passage = {
 	Unused: 0,
@@ -226,6 +233,7 @@ let rooms;
 let regions;
 let mergedRegions;
 
+let difficultySelection = true;
 let hasGenerated = false;
 let genState = -1;
 let mazeGenState = -1;
@@ -262,7 +270,7 @@ function get2dArray(cols, rows)
 
 function setup() 
 {
-	createGui();
+	createCanvas(windowWidth, windowHeight);
 }
 
 function createGui()
@@ -271,11 +279,11 @@ function createGui()
 	createCanvas(800, 370);
 
 	//gui elements to edit rules
-	xSizeSlider = createSlider(5, 300, vertexCols, 5);
+	xSizeSlider = createSlider(5, 150, vertexCols, 1);
 	xSizeSlider.position(10, 10);
 	xSizeSlider.style('width', '500px');
 
-	ySizeSlider = createSlider(5, 300, vertexRows, 5);
+	ySizeSlider = createSlider(5, 150, vertexRows, 1);
 	ySizeSlider.position(10, 40);
 	ySizeSlider.style('width', '500px');
 
@@ -364,7 +372,11 @@ function reset()
 	randomConnectionSlider.remove();
 	generateButton.remove();
 	defaultsButton.remove();
+	startGen();
+}
 
+function startGen()
+{
 	//Cells are organized as such (V = Vertex, R = Regular)
 	
 	// R R R R R
@@ -412,136 +424,243 @@ function reset()
 
 function draw() // draws only the gui when the dungeon isn't generated
 {
-	if (!hasGenerated)
-	{	
+	if (difficultySelection)
+	{
 		background(30);
-		if (genState === -1)
+		textSize(92);
+		textAlign(CENTER, CENTER);
+		//Difficulty buttons
+		//easy
+		if (mouseX > windowWidth * 0.1 && mouseX < windowWidth * 0.45 && mouseY > windowHeight * 0.1 && mouseY < windowHeight * 0.45)
 		{
-			background(255);
-			fill('rgba(30%,60%,20%,0.6)');
-			rect(0,0,800,370);
-
-			textSize(20);
-			fill(0);
-			noStroke();
-
-			text('X Size: ' + xSizeSlider.value(), 520, 30);
-			text('Y Size: ' + ySizeSlider.value(), 520, 60);
-			text('Pixels Per Cell: ' + pixelsPerCellSlider.value(), 520, 90);
-			if (roomAttemptsSlider.value() == 0)
+			fill(150, 190, 220); stroke(255); strokeWeight(4);
+			if (mouseIsPressed)
 			{
-				text('Room Attempts: 1', 520, 120);
+				vertexRows = 7;
+				vertexCols = 7;
+				roomAttempts = 20;
+				roomMinSize = 1;
+				roomMaxSize = 2;
+				pixelsPerCell = 28;
+				deadEndRemoval = 0.85;
+				randomConnection = 0.015;
+				difficultySelection = false;
+				startGen();
 			}
-			else
-			{
-				text('Room Attempts: ' + roomAttemptsSlider.value(), 520, 120);
-			}
-			text('Room Min Size: ' + roomMinSizeSlider.value(), 520, 150);
-			text('Room Max Size: ' + roomMaxSizeSlider.value(), 520, 180);
-			text('Dead End Removal: ' + deadEndRemovalSlider.value(), 520, 210);
-			text('Random Connection: ' + randomConnectionSlider.value(), 520, 240);
-			text('WASD or Arrow Keys to move. Press space to mark or unmark a cell.', 10, 295);
-			text('Press G to regenerate using the same settings. To win reach the red exit cell.', 10, 325);
-			text('Press R to return to the options. Press J to cheat and view the board (lags on big maps).', 10, 355);
-		}
-		else if (genState == 0)
-		{
-			createCanvas(windowWidth, windowHeight);
-			background(30);
-			noStroke();
-			textSize(30);
-			fill(255);
-			text('0% completed.', 10, 10);
-			textSize(20);
-			text('Placing rooms.', 10, 40);
-			genState = 1;
-		}
-		else if (genState == 1)
-		{
-			text('0% completed.', 10, 10);
-			textSize(20);
-			text('Placing rooms.', 10, 40);
-
-			mazeGenState = -1;
-			generateRooms(); // places the rooms
-			genState = 2;
-		}
-		else if (genState == 2)
-		{
-			textSize(30);
-			text((5 + floor(mazeGenState / 5)) + '% completed.', 10, 30);
-			textSize(20);
-			text('Filling in maze corridors.', 10, 70);
-			generateMaze(); // fills in remaining space with maze corridors
-			if (generateMaze())
-			{
-				genState = 3;
-			}
-			else
-			{
-				mazeGenState++;
-			}
-		}
-		else if (genState == 3)
-		{
-			textSize(30);
-			text('20% completed.', 10, 30);
-			textSize(20);
-			text('Finding region connections.', 10, 70);
-
-			genState = 4;
-		}
-		else if (genState == 4)
-		{
-			textSize(30);
-			text('20% completed.', 10, 30);
-			textSize(20);
-			text('Finding region connections.', 10, 70);
-
-			getConnections(); // connects rooms and mazes
-			mazeGenState = -1;
-			genState = 5;
-		}
-		else if (genState == 5)
-		{
-			textSize(30);
-			text((20 + floor(mazeGenState / 3)) + '% completed.', 10, 30);
-			textSize(20);
-			text('Connecting regions.', 10, 70);
-			if (connectRegions())
-			{
-				genState = 6;
-			}
-			else
-			{
-				mazeGenState++;
-			}
-		}
-		else if (genState == 6)
-		{
-			textSize(30);
-			text('85% completed.', 10, 30);
-			textSize(20);
-			text('Removing dead ends.', 10, 70);
-			removeDeadEnds(); // removes some dead ends in maze corridors
-			genState = 7;
-		}
-		else if (genState == 7)
-		{
-			textSize(30);
-			text('95% completed.', 10, 30);
-			textSize(20);
-			text('Finishing.', 10, 70);
-			setEnd(); // decides what the ending room should be
-			genState = 8;
 		}
 		else
 		{
-			createCanvas(windowWidth, windowHeight);
-			hasGenerated = true;
-			genState = -1;
+			fill(110, 170, 220); stroke(200); strokeWeight(2);
+		}
+		rect(windowWidth * 0.1, windowHeight * 0.1, windowWidth * 0.35, windowHeight * 0.35)
+		fill(0); noStroke();
+		text("Easy", windowWidth * 0.275, windowHeight * 0.275)
 
-			render(); // renders everything
+		//medium
+		if (mouseX > windowWidth * 0.55 && mouseX < windowWidth * 0.9 && mouseY > windowHeight * 0.1 && mouseY < windowHeight * 0.45)
+		{
+			fill(150, 190, 220); stroke(255); strokeWeight(4);
+			if (mouseIsPressed)
+			{
+				vertexRows = 11;
+				vertexCols = 11;
+				roomAttempts = 75;
+				roomMinSize = 1;
+				roomMaxSize = 3;
+				pixelsPerCell = 28;
+				deadEndRemoval = 0.85;
+				randomConnection = 0.005;
+				difficultySelection = false;
+				startGen();
+			}
+		}
+		else
+		{
+			fill(110, 170, 220); stroke(200); strokeWeight(2);
+		}
+		rect(windowWidth * 0.55, windowHeight * 0.1, windowWidth * 0.35, windowHeight * 0.35)
+		fill(0); noStroke();
+		text("Medium", windowWidth * 0.725, windowHeight * 0.275)
+
+		//hard
+		if (mouseX > windowWidth * 0.1 && mouseX < windowWidth * 0.45 && mouseY > windowHeight * 0.55 && mouseY < windowHeight * 0.9)
+		{
+			fill(150, 190, 220); stroke(255); strokeWeight(4);
+			if (mouseIsPressed)
+			{
+				vertexRows = 16;
+				vertexCols = 16;
+				roomAttempts = 250;
+				roomMinSize = 1;
+				roomMaxSize = 3;
+				pixelsPerCell = 28;
+				deadEndRemoval = 0.85;
+				randomConnection = 0.005;
+				difficultySelection = false;
+				startGen();
+			}
+		}
+		else
+		{
+			fill(110, 170, 220); stroke(200); strokeWeight(2);
+		}
+		rect(windowWidth * 0.1, windowHeight * 0.55, windowWidth * 0.35, windowHeight * 0.35)
+		fill(0); noStroke();
+		text("Hard", windowWidth * 0.275, windowHeight * 0.725)
+
+		//custom
+		if (mouseX > windowWidth * 0.55 && mouseX < windowWidth * 0.9 && mouseY > windowHeight * 0.55 && mouseY < windowHeight * 0.9)
+		{
+			fill(150, 190, 220); stroke(255); strokeWeight(4);
+			if (mouseIsPressed)
+			{
+				difficultySelection = false;
+				createGui();
+				setDefaults();
+			}
+		}
+		else
+		{
+			fill(110, 170, 220); stroke(200); strokeWeight(2);
+		}
+		rect(windowWidth * 0.55, windowHeight * 0.55, windowWidth * 0.35, windowHeight * 0.35)
+		fill(0); noStroke();
+		text("Custom", windowWidth * 0.725, windowHeight * 0.725);
+	}
+	else
+	{
+		textAlign(LEFT, CENTER);
+		if (!hasGenerated)
+		{	
+			background(30);
+			if (genState === -1)
+			{
+				background(255);
+				fill('rgba(30%,60%,20%,0.6)');
+				rect(0,0,800,370);
+
+				textSize(20);
+				fill(0);
+				noStroke();
+
+				text('X Size: ' + xSizeSlider.value(), 520, 30);
+				text('Y Size: ' + ySizeSlider.value(), 520, 60);
+				text('Pixels Per Cell: ' + pixelsPerCellSlider.value(), 520, 90);
+				if (roomAttemptsSlider.value() == 0)
+				{
+					text('Room Attempts: 1', 520, 120);
+				}
+				else
+				{
+					text('Room Attempts: ' + roomAttemptsSlider.value(), 520, 120);
+				}
+				text('Room Min Size: ' + roomMinSizeSlider.value(), 520, 150);
+				text('Room Max Size: ' + roomMaxSizeSlider.value(), 520, 180);
+				text('Dead End Removal: ' + deadEndRemovalSlider.value(), 520, 210);
+				text('Random Connection: ' + randomConnectionSlider.value(), 520, 240);
+				text('WASD or Arrow Keys to move. Press space to mark or unmark a cell.', 10, 295);
+				text('Press G to regenerate using the same settings. To win reach the red exit cell.', 10, 325);
+				text('Press R to return to the options. Press J to cheat and view the board (lags on big maps).', 10, 355);
+			}
+			else if (genState == 0)
+			{
+				createCanvas(windowWidth, windowHeight);
+				background(30);
+				noStroke();
+				textSize(30);
+				fill(255);
+				text('0% completed.', 10, 10);
+				textSize(20);
+				text('Placing rooms.', 10, 40);
+				genState = 1;
+			}
+			else if (genState == 1)
+			{
+				text('0% completed.', 10, 10);
+				textSize(20);
+				text('Placing rooms.', 10, 40);
+
+				mazeGenState = -1;
+				generateRooms(); // places the rooms
+				genState = 2;
+			}
+			else if (genState == 2)
+			{
+				textSize(30);
+				text((5 + floor(mazeGenState / 5)) + '% completed.', 10, 30);
+				textSize(20);
+				text('Filling in maze corridors.', 10, 70);
+				generateMaze(); // fills in remaining space with maze corridors
+				if (generateMaze())
+				{
+					genState = 3;
+				}
+				else
+				{
+					mazeGenState++;
+				}
+			}
+			else if (genState == 3)
+			{
+				textSize(30);
+				text('20% completed.', 10, 30);
+				textSize(20);
+				text('Finding region connections.', 10, 70);
+
+				genState = 4;
+			}
+			else if (genState == 4)
+			{
+				textSize(30);
+				text('20% completed.', 10, 30);
+				textSize(20);
+				text('Finding region connections.', 10, 70);
+
+				getConnections(); // connects rooms and mazes
+				mazeGenState = -1;
+				genState = 5;
+			}
+			else if (genState == 5)
+			{
+				textSize(30);
+				text((20 + floor(mazeGenState / 3)) + '% completed.', 10, 30);
+				textSize(20);
+				text('Connecting regions.', 10, 70);
+				if (connectRegions())
+				{
+					genState = 6;
+				}
+				else
+				{
+					mazeGenState++;
+				}
+			}
+			else if (genState == 6)
+			{
+				textSize(30);
+				text('85% completed.', 10, 30);
+				textSize(20);
+				text('Removing dead ends.', 10, 70);
+				removeDeadEnds(); // removes some dead ends in maze corridors
+				genState = 7;
+			}
+			else if (genState == 7)
+			{
+				textSize(30);
+				text('95% completed.', 10, 30);
+				textSize(20);
+				text('Finishing.', 10, 70);
+				setEnd(); // decides what the ending room should be
+				genState = 8;
+			}
+			else
+			{
+				createCanvas(windowWidth, windowHeight);
+				hasGenerated = true;
+				genState = -1;
+
+				render(); // renders everything
+			}
 		}
 	}
 }
@@ -770,13 +889,32 @@ function connectRegions()  // connects rooms and mazes
 		}
 
 		//cull unnessesary connections
+		let index = 0;
+		let count = -1;
 		for (let j = 0; j < regions[0].length; j++)
 		{
 			if (mergedRegions.includes(regions[0][j][0]))
 			{
-				regions[0].splice(j, 1);
-				j--;
+				if (count == -1)
+				{
+					index = j;
+					count = 1;
+				}
+				else
+				{
+					count++;
+				}
 			}
+			else if (count != -1)
+			{
+				regions[0].splice(index, count);
+				j -= count;
+				count = -1;
+			}
+		}
+		if (count != -1)
+		{
+			regions[0].splice(index, count);
 		}
 	}
 
@@ -1041,11 +1179,26 @@ function render() // renders the dungeon
 	{
 		endCell.render(playerX, playerY);
 	}
+	
+	drawPlayerInstructions();
+}
 
+function drawPlayerInstructions()
+{
+	//draws player
 	strokeWeight(3); 
 	stroke(0,0,255);
 	fill(160,200,255);
 	ellipse(windowWidth / 2, windowHeight / 2, pixelsPerCell * 0.75);
+
+	//draws instructions
+	textSize(20);
+	textAlign(LEFT, BOTTOM);
+	fill(255);
+	noStroke();
+	text('Arrows or WASD to move.', 4, windowHeight - 24 - 24);
+	text('Space to place a marker.', 4, windowHeight - 24);
+	text('J to cheat and view the whole dungeon. R to reset. G to regenerate.', 4, windowHeight);
 }
 
 function renderAll()
@@ -1066,10 +1219,7 @@ function renderAll()
 	startCell.render(playerX, playerY);
 	endCell.render(playerX, playerY);
 
-	strokeWeight(3); 
-	stroke(0,0,255);
-	fill(160,200,255);
-	ellipse(windowWidth / 2, windowHeight / 2, pixelsPerCell * 0.75);
+	drawPlayerInstructions();
 }
 
 function isInRoom(x, y, room)
@@ -1084,15 +1234,17 @@ function isInRoom(x, y, room)
 
 function keyPressed() // regenerate the maze, go back to options, or move
 {
-	if (hasGenerated)  //g
+	if (hasGenerated) 
 	{
-		if (keyCode === 71)
+		if (keyCode === 71) //g
 		{
-			reset();
+			startGen();
 		}
 		if (keyCode === 82)  //r
 		{
-			createGui();
+			difficultySelection = true;
+			hasGenerated = false;
+			cheater = false;
 		}
 
 		if (keyCode === 87 || keyCode == 38)  // w || up
@@ -1135,7 +1287,9 @@ function attemptPlayerMove(x, y)
 		playerY += y;
 		if (getCell(playerX, playerY).isEnd)
 		{
-			createGui();
+			difficultySelection = true;
+			cheater = false;
+			hasGenerated = false;
 		}
 		render();
 	}
