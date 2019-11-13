@@ -1198,7 +1198,7 @@ function drawPlayerInstructions()
 	noStroke();
 	text('Arrows or WASD to move.', 4, windowHeight - 24 - 24 - 4);
 	text('Space to place a marker.', 4, windowHeight - 24 - 4);
-	text('J to cheat and view the whole dungeon. R to reset. G to regenerate.', -4, windowHeight);
+	text('J to cheat and view the whole dungeon. R to reset. G to regenerate.', 4, windowHeight - 4);
 }
 
 function renderAll()
