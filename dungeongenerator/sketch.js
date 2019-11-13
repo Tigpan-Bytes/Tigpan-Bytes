@@ -443,7 +443,7 @@ function draw() // draws only the gui when the dungeon isn't generated
 				roomMaxSize = 2;
 				pixelsPerCell = 28;
 				deadEndRemoval = 0.85;
-				randomConnection = 0.015;
+				randomConnection = 0.01;
 				difficultySelection = false;
 				startGen();
 			}
